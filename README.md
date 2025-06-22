@@ -1,7 +1,6 @@
 # dotenv-guard
 
 [![npm version](https://badge.fury.io/js/dotenv-guard.svg)](https://badge.fury.io/js/dotenv-guard)
-[![CI/CD](https://github.com/kasimlyee/dotenv-guard/actions/workflows/ci.yml/badge.svg)](https://github.com/kasimlyee/dotenv-guard/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 **dotenv-guard** is an environment variable validation tool that brings type safety and schema validation to your Node.js and JavaScript applications. It extends `dotenv` with features like:
