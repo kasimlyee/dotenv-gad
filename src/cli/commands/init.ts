@@ -31,7 +31,7 @@ export default function (program: Command) {
       const spinner = ora("Creating new schema...").start();
 
       try {
-        const template = `import { defineSchema } from 'dotenv-guard';
+        const template = `import { defineSchema } from 'dotenv-gad';
 
 export default defineSchema({
   // Add your environment variables here

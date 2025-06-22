@@ -23,7 +23,7 @@ export function createCLI() {
     .version(pkg.version)
     .description(
       chalk.green(
-        figlet.textSync("dotenv-guard", {
+        figlet.textSync("dotenv-gad", {
           font: "Standard",
           horizontalLayout: "fitted",
         })
