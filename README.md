@@ -1,4 +1,3 @@
-````markdown
 # dotenv-guard
 
 [![npm version](https://badge.fury.io/js/dotenv-guard.svg)](https://badge.fury.io/js/dotenv-guard)
@@ -23,7 +22,6 @@ yarn add dotenv-guard
 # or
 pnpm add dotenv-guard
 ```
-````
 
 ## Quick Start
 
@@ -201,7 +199,3 @@ Environment validation failed:
 ## 📜 License
 
 MIT © [Kasim Lyee]
-
-```
-
-```
