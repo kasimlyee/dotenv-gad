@@ -1,9 +1,9 @@
-# dotenv-guard
+# dotenv-gad
 
-[![npm version](https://badge.fury.io/js/dotenv-guard.svg)](https://badge.fury.io/js/dotenv-guard)
+[![npm version](https://badge.fury.io/js/dotenv-gad.svg)](https://badge.fury.io/js/dotenv-guard)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**dotenv-guard** is an environment variable validation tool that brings type safety and schema validation to your Node.js and JavaScript applications. It extends `dotenv` with features like:
+**dotenv-gad** is an environment variable validation tool that brings type safety and schema validation to your Node.js and JavaScript applications. It extends `dotenv` with features like:
 
 - Type-safe environment variables
 - Schema validation
@@ -15,11 +15,11 @@
 ## Installation
 
 ```bash
-npm install dotenv-guard
+npm install dotenv-gad
 # or
-yarn add dotenv-guard
+yarn add dotenv-gad
 # or
-pnpm add dotenv-guard
+pnpm add dotenv-gad
 ```
 
 ## Quick Start
@@ -27,7 +27,7 @@ pnpm add dotenv-guard
 1. Create a schema file (`env.schema.ts`):
 
 ```typescript
-import { defineSchema } from "dotenv-guard";
+import { defineSchema } from "dotenv-gad";
 
 export default defineSchema({
   PORT: {
@@ -46,7 +46,7 @@ export default defineSchema({
 2. Validate your environment:
 
 ```typescript
-import { loadEnv } from "dotenv-guard";
+import { loadEnv } from "dotenv-gad";
 import schema from "./env.schema";
 
 const env = loadEnv(schema);
@@ -63,8 +63,8 @@ console.log(`Server running on port ${env.PORT}`);
 | `init`  | Create starter schema              |
 
 ```bash
-npx dotenv-guard check
-npx dotenv-guard types
+npx dotenv-gad check
+npx dotenv-gad types
 ```
 
 ## Features
@@ -117,7 +117,7 @@ npx dotenv-guard types
 
 ```typescript
 import express from "express";
-import { loadEnv } from "dotenv-guard";
+import { loadEnv } from "dotenv-gad";
 import schema from "./env.schema";
 
 const env = loadEnv(schema);
@@ -133,7 +133,7 @@ app.listen(env.PORT, () => {
 Create `next.config.js`:
 
 ```javascript
-const { loadEnv } = require("dotenv-guard");
+const { loadEnv } = require("dotenv-gad");
 const schema = require("./env.schema");
 
 const env = loadEnv(schema);
