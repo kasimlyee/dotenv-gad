@@ -1,0 +1,47 @@
+{
+  "name": "dotenv-guard",
+  "version": "0.1.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "bin": {
+    "dotenv-guard": "./dist/cli/index.js"
+  },
+  "scripts": {
+    "build": "tsc && chmod +x ./dist/cli/index.js",
+    "test": "jest",
+    "dev": "tsc --watch",
+    "prepublishOnly": "npm run build && npm test"
+  },
+  "keywords": [
+    "dotenv",
+    "environment",
+    "validation",
+    "typescript",
+    "schema",
+    "configuration"
+  ],
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist/**/*",
+    "README.md",
+    "LICENSE"
+  ],
+  "author": "Kasim Lyee",
+  "license": "MIT",
+  "description": "Environment variable validation and type safety for Node.js and modern JavaScript applications",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kasimlyee/dotenv-guard.git"
+  },
+  "bugs": {
+    "url": "https://github.com/kasimlyee/dotenv-guard/issues"
+  },
+  "homepage": "https://github.com/kasimlyee/dotenv-guard#readme"
+}
