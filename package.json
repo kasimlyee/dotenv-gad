@@ -29,7 +29,7 @@
     "./package.json": "./package.json"
   },
   "files": [
-    "dist/**/*",
+    "dist/**/*.d.ts",
     "README.md",
     "LICENSE"
   ],
