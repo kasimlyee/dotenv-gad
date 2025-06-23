@@ -11,7 +11,7 @@ This project is open to improvements and community collaboration. Whether you’
 
 1. **Fork the repository** and clone your fork:
    ```bash
-   git clone https://github.com/your-username/dotenv-gad.git
+   git clone https://github.com/kasimlyee/dotenv-gad.git
    cd dotenv-gad
 
 
