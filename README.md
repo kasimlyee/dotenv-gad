@@ -198,7 +198,7 @@ Environment validation failed:
 }
 ```
 
-## 📜 License
+## License
 
 MIT © [Kasim Lyee]
 
