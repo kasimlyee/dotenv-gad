@@ -7,6 +7,7 @@
 
 - Type-safe environment variables
 - Schema validation
+- Schema composition
 - Automatic documentation generation
 - TypeScript support
 - CLI tooling
@@ -61,6 +62,8 @@ console.log(`Server running on port ${env.PORT}`);
 | `sync`  | Generate/update .env.example       |
 | `types` | Generate env.d.ts TypeScript types |
 | `init`  | Create starter schema              |
+| `fix`   | Fixes environment issues           |
+| `docs`  | Generates .env documentation       |
 
 ```bash
 npx dotenv-gad check
