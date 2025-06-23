@@ -10,6 +10,7 @@ import checkCommand from "./commands/check.js";
 import syncCommand from "./commands/sync.js";
 import typesCommand from "./commands/types.js";
 import initCommand from "./commands/init.js";
+import fixCommand from "./commands/fix.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const pkg = JSON.parse(
@@ -33,7 +34,13 @@ export function createCLI() {
     .option("--env <file>", "Specify env file path", ".env")
     .option("--schema <file>", "Specify schema file path", "env.schema.ts");
 
-  const commands = [checkCommand, syncCommand, typesCommand, initCommand];
+  const commands = [
+    checkCommand,
+    syncCommand,
+    typesCommand,
+    initCommand,
+    fixCommand,
+  ];
 
   commands.forEach((command) => {
     const cmd = command(program);
