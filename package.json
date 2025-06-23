@@ -13,12 +13,6 @@
     "dev": "tsc --watch",
     "prepublishOnly": "npm run build && npm test"
   },
-  "jest": {
-    "extensionsToTreatAsEsm": [
-      ".ts"
-    ],
-    "transform": {}
-  },
   "keywords": [
     "dotenv",
     "environment",
@@ -63,6 +57,7 @@
     "ts-jest": "^29.4.0"
   },
   "dependencies": {
+    "dotenv": "^16.5.0",
     "esbuild": "^0.25.5"
   }
 }
