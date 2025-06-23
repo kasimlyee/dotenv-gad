@@ -23,6 +23,7 @@ export interface SchemaRule {
   docs?: string;
   enum?: any[];
   regex?: RegExp;
+  regexError?: string;
   error?: string;
   items?: SchemaRule;
   properties?: Record<string, SchemaRule>;

@@ -222,6 +222,12 @@ export class EnvValidator {
       throw new Error(effectiveRule.error || "Custom validation failed");
     }
 
+    if (effectiveRule.regex && effectiveRule.regex.test(String(value))) {
+      throw new Error(
+        effectiveRule.regexError || `Must match regex: ${effectiveRule.regex}`
+      );
+    }
+
     return value;
   }
 

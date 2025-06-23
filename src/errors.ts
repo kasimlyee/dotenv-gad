@@ -1,5 +1,16 @@
 import { SchemaRule } from "./schema.js";
 
+export class EnvValidationError extends Error {
+  constructor(
+    public key: string,
+    public message: string,
+    public receiveValue?: unknown
+  ) {
+    super(message);
+    this.name = "EnvValidationError";
+  }
+}
+
 export class AggregateError extends Error {
   constructor(
     public errors: {

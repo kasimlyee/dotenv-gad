@@ -11,6 +11,7 @@ import syncCommand from "./commands/sync.js";
 import typesCommand from "./commands/types.js";
 import initCommand from "./commands/init.js";
 import fixCommand from "./commands/fix.js";
+import docsCommand from "./commands/docs.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const pkg = JSON.parse(
@@ -40,6 +41,7 @@ export function createCLI() {
     typesCommand,
     initCommand,
     fixCommand,
+    docsCommand,
   ];
 
   commands.forEach((command) => {
