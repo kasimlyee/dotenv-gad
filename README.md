@@ -202,4 +202,4 @@ Environment validation failed:
 
 MIT © [Kasim Lyee]
 
-[![contribution](https://github.com/kasimlyee/dotenv-gad/blob/main/CONTRIBUTING.md)] are welcome!!
+[Contributions](https://github.com/kasimlyee/dotenv-gad/blob/main/CONTRIBUTING.md) are welcome!!
