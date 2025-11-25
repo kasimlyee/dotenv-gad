@@ -29,10 +29,10 @@ export class AggregateError extends Error {
   toString() {
     const errorList = this.errors
       .map((e) => {
-        let msg = `  - ${e.key}:${e.message}`;
+        let msg = `  - ${e.key}: ${e.message}`;
         if (e.value !== undefined)
-          msg += ` (reaceived: ${JSON.stringify(e.value)})`;
-        if (e.rule?.docs) msg += `\n   (${e.rule.docs})`;
+          msg += ` (received: ${JSON.stringify(e.value)})`;
+        if (e.rule?.docs) msg += `\n    ${e.rule.docs}`;
         return msg;
       })
       .join("\n");

@@ -29,6 +29,7 @@
     "./package.json": "./package.json"
   },
   "files": [
+    "dist/**/*.js",
     "dist/**/*.d.ts",
     "README.md",
     "LICENSE"
@@ -57,7 +58,12 @@
     "ts-jest": "^29.4.0"
   },
   "dependencies": {
+    "chalk": "^5.3.0",
+    "commander": "^12.1.0",
     "dotenv": "^16.5.0",
-    "esbuild": "^0.25.5"
+    "esbuild": "^0.25.5",
+    "figlet": "^1.8.0",
+    "inquirer": "^12.3.0",
+    "ora": "^8.1.1"
   }
 }

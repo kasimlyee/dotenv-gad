@@ -12,7 +12,7 @@ export default function (program: Command) {
     .option("--fix", "Attempt to fix errors interactively")
     .action(async (option, command) => {
       const rootOpts = command.parent.opts();
-      const spinner = ora("Validatng environment.......").start();
+      const spinner = ora("Validating environment...").start();
 
       try {
         const schema = await loadSchema(rootOpts.schema);

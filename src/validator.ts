@@ -55,7 +55,7 @@ export class EnvValidator {
 
   private validateKey(key: string, rule: SchemaRule, value: any) {
     const effectiveRule = this.getEffectiveRule(key, rule);
-    if (value === undefined) {
+    if (value === undefined || value === "") {
       if (effectiveRule.required)
         throw new Error(`Missing required environment variable`);
       return effectiveRule.default;
@@ -114,6 +114,14 @@ export class EnvValidator {
           );
         }
         value = Boolean(value);
+        break;
+
+      case "date":
+        const date = new Date(value);
+        if (isNaN(date.getTime())) {
+          throw new Error(`Environment variable ${key} must be a valid date`);
+        }
+        value = date;
         break;
 
       case "url":
@@ -212,20 +220,15 @@ export class EnvValidator {
       );
     }
 
-    if (effectiveRule.regex && !effectiveRule.regex.test(value)) {
+    if (effectiveRule.regex && !effectiveRule.regex.test(String(value))) {
       throw new Error(
-        `Environment variable ${key} must match ${effectiveRule.regex}`
+        effectiveRule.regexError ||
+          `Environment variable ${key} must match ${effectiveRule.regex}`
       );
     }
 
     if (effectiveRule.validate && !effectiveRule.validate(value)) {
       throw new Error(effectiveRule.error || "Custom validation failed");
-    }
-
-    if (effectiveRule.regex && effectiveRule.regex.test(String(value))) {
-      throw new Error(
-        effectiveRule.regexError || `Must match regex: ${effectiveRule.regex}`
-      );
     }
 
     return value;
