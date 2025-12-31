@@ -9,6 +9,12 @@ export class EnvValidator {
     rule?: SchemaRule;
   }[] = [];
 
+  /**
+   * Constructs a new EnvValidator instance.
+   * @param {SchemaDefinition} schema The schema definition for the environment variables.
+   * @param {Object} [options] Optional options for the validation process.
+   * @param {boolean} [options.strict] When true, environment variables not present in the schema will be rejected.
+   */
   constructor(
     private schema: SchemaDefinition,
     private options?: { strict?: boolean }
@@ -52,6 +58,7 @@ export class EnvValidator {
     }
     return result;
   }
+
 
   private validateKey(key: string, rule: SchemaRule, value: any) {
     const effectiveRule = this.getEffectiveRule(key, rule);
