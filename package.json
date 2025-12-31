@@ -8,7 +8,7 @@
     "dotenv-guard": "./dist/cli/index.js"
   },
   "scripts": {
-    "build": "tsc && chmod +x ./dist/cli/index.js",
+    "build": "tsc",
     "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest",
     "test:watch": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --watch",
     "test:coverage": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --coverage",
@@ -72,6 +72,7 @@
     "@types/node": "^24.0.3",
     "@types/ora": "^3.1.0",
     "cross-env": "^7.0.3",
+    "cross-env-shell": "^7.0.3",
     "esbuild": "^0.25.5",
     "eslint": "^9.17.0",
     "globals": "^15.14.0",
