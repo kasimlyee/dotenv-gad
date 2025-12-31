@@ -146,8 +146,8 @@ export class EnvValidator {
         break;
 
       case "ip":
-        if (!/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(String(value))) {
-          throw new Error("Must be a valid IP address");
+        if (!/^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(String(value))) {
+           throw new Error("Must be a valid IP address");
         }
         break;
       case "port":
