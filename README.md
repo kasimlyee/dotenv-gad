@@ -100,7 +100,7 @@ npx dotenv-gad types
 - Interactive fixes
 - Strict mode
 - Custom schema paths
-- CI/CD friendly (comming soon!)
+- CI/CD friendly
 
 ### Secret Management
 
