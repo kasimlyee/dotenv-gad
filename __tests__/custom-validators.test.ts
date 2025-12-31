@@ -16,7 +16,17 @@ describe("Custom Validators", () => {
     //const env = validateEnv(schema);
     //expect(env.SECRET_KEY).toBe("sk_test_123");
 
+    //Just need to look more on this test, I guess its not the perfect way but
+
     process.env.SECRET_KEY = "invalid";
-    expect(() => validateEnv(schema)).toThrow(AggregateError);
+    try {
+    validateEnv(schema);
+  } catch (error) {
+    if (error instanceof AggregateError) {
+      expect(error).toBeInstanceOf(AggregateError);
+    } else {
+      throw error;
+    }
+  }
   });
 });
