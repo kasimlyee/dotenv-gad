@@ -1,8 +1,8 @@
-import { readFileSync, writeFileSync, unlinkSync } from "fs";
-import { dirname, join } from "path";
-import { fileURLToPath } from "url";
+import { readFileSync, writeFileSync, unlinkSync, existsSync } from "fs";
+import { dirname, join, resolve } from "path";
+import { fileURLToPath, pathToFileURL } from "url";
 import { transformSync } from "esbuild";
-import { SchemaDefinition, SchemaRule } from "../../schema.js";
+import { SchemaDefinition } from "../../schema.js";
 import Chalk from "chalk";
 import inquirer from "inquirer";
 
@@ -17,10 +17,17 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 export async function loadSchema(
   schemaPath: string
 ): Promise<SchemaDefinition> {
+
+  const absPath = resolve(schemaPath);
+
+  const importModule = async(filePath: string) => {
+    const fileUrl = pathToFileURL(filePath).href;
+    return (await import(`${fileUrl}?t=${Date.now()}`)).default;
+  }
   const loadTsModule = async (
     tsFilePath: string
   ): Promise<SchemaDefinition> => {
-    const tempFile = join(__dirname, "../../temp-schema.mjs");
+    const tempFile = join(__dirname, `../../temp-schema-${Date.now()}.mjs`);
     try {
       const tsCode = readFileSync(tsFilePath, "utf-8");
       const { code } = transformSync(tsCode, {
@@ -29,19 +36,22 @@ export async function loadSchema(
         target: "esnext",
       });
       writeFileSync(tempFile, code);
-      return (await import(`${tempFile}?t=${Date.now()}`)).default;
+      return await importModule(tempFile);
     } finally {
-      unlinkSync(tempFile);
+      if(existsSync(tempFile)){
+        unlinkSync(tempFile);
+      }
+      
     }
   };
 
   try {
-    if (schemaPath.endsWith(".ts")) {
-      return await loadTsModule(schemaPath);
-    } else if (schemaPath.endsWith(".js")) {
-      return (await import(`${schemaPath}?t=${Date.now()}`)).default;
-    } else if (schemaPath.endsWith(".json")) {
-      return JSON.parse(readFileSync(schemaPath, "utf-8"));
+    if (absPath.endsWith(".ts")) {
+      return await loadTsModule(absPath);
+    } else if (absPath.endsWith(".js")) {
+      return await importModule(absPath);
+    } else if (absPath.endsWith(".json")) {
+      return JSON.parse(readFileSync(absPath, "utf-8"));
     }
     throw new Error(`Unsupported schema format. Use .ts, .js or .json`);
   } catch (error) {
