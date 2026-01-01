@@ -1,0 +1,7 @@
+{
+  "VITE_APP_TITLE": {
+    "type": "string",
+    "required": true,
+    "default": "My App"
+  }
+}
