@@ -34,6 +34,13 @@ jobs:
       - name: Build docs (no-op for Docsify)
         run: echo 'Docsify does not require a build step'
 
+      - name: Debug Git state
+        run: |
+          git --version
+          git config --list
+          git remote -v
+          git status --porcelain --branch
+
       - name: Publish docs to gh-pages under versioned path
         uses: peaceiris/actions-gh-pages@v3
         with:
@@ -41,6 +48,10 @@ jobs:
           publish_dir: ./docs
           publish_branch: gh-pages
           destination_dir: v${{ env.VERSION }}
+          allow_empty_commit: true
+          user_name: 'github-actions[bot]'
+          user_email: 'github-actions[bot]@users.noreply.github.com'
+          commit_message: 'docs: publish version ${GITHUB_REF_NAME#v} (gh-pages)'
 
       - name: Update versions index on gh-pages (and ensure 'latest')
         uses: actions/github-script@v6
@@ -99,3 +110,8 @@ jobs:
           publish_dir: ./docs
           publish_branch: gh-pages
           destination_dir: latest
+          allow_empty_commit: true
+          user_name: 'github-actions[bot]'
+          user_email: 'github-actions[bot]@users.noreply.github.com'
+          commit_message: 'docs: publish latest alias (gh-pages)'
+

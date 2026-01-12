@@ -9,6 +9,8 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -22,7 +24,14 @@ jobs:
         run: npm ci
 
       - name: Build (no-op for docsify)
-        run: echo 'Docsify does not require a build step' 
+        run: echo 'Docsify does not require a build step'
+
+      - name: Debug Git state
+        run: |
+          git --version
+          git config --list
+          git remote -v
+          git status --porcelain --branch
 
       - name: Publish to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
@@ -30,3 +39,7 @@ jobs:
           publish_dir: ./docs
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
+          allow_empty_commit: true
+          user_name: 'github-actions[bot]'
+          user_email: 'github-actions[bot]@users.noreply.github.com'
+          commit_message: 'docs: publish docs (gh-pages)'
