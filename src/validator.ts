@@ -17,7 +17,7 @@ export class EnvValidator {
    */
   constructor(
     private schema: SchemaDefinition,
-    private options?: { strict?: boolean }
+    private options?: { strict?: boolean; includeRaw?: boolean; includeSensitive?: boolean }
   ) {}
 
   validate(env: Record<string, string | undefined>) {
@@ -34,11 +34,27 @@ export class EnvValidator {
         result[key] = this.validateKey(key, rule, env[key]);
       } catch (error) {
         if (error instanceof Error) {
+          // Decide what to include in the error report depending on options:
+          // - default: redact sensitive values and shorten long strings
+          // - includeRaw: include raw values for non-sensitive fields
+          // - includeSensitive: when used with includeRaw, include raw sensitive values too (use with caution)
+          let displayedValue: any;
+          if (env[key] === undefined) {
+            displayedValue = undefined;
+          } else if (this.options?.includeRaw) {
+            if (rule.sensitive && !this.options?.includeSensitive) {
+              displayedValue = "****";
+            } else {
+              displayedValue = env[key];
+            }
+          } else {
+            displayedValue = this.redactValue(env[key], rule.sensitive);
+          }
+
           this.errors.push({
             key,
             message: error.message,
-            // redact sensitive values by default
-            value: this.redactValue(env[key], rule.sensitive),
+            value: displayedValue,
             rule,
           });
         }

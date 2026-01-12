@@ -159,6 +159,23 @@ Environment validation failed:
   - API_KEY: Must start with 'sk_' (received: "invalid")
 ```
 
+By default values in the report are redacted (sensitive values are always masked). You can opt-in to include raw values in error reports when instantiating the validator (useful for local debugging) by using the `includeRaw` option. If you also want to reveal values marked as `sensitive: true` set `includeSensitive` to `true` (use with caution).
+
+```ts
+// include raw values in errors (non-sensitive values only)
+import { loadEnv } from "dotenv-gad";
+const env = loadEnv(schema, { includeRaw: true });
+
+// or with finer control
+import { EnvValidator } from "dotenv-gad";
+const validator = new EnvValidator(schema, { includeRaw: true, includeSensitive: true });
+try {
+  validator.validate(process.env);
+} catch (err) {
+  console.error(String(err));
+}
+```
+
 ## more usages
 
 ### Environment-Specific Rules

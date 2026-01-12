@@ -13,7 +13,7 @@ import { EnvValidator } from "./validator.js";
  */
 export function loadEnv(
   schema: SchemaDefinition,
-  options?: { strict?: boolean }
+  options?: { strict?: boolean; includeRaw?: boolean; includeSensitive?: boolean }
 ) {
   const env = dotenv.config().parsed || {};
   const validator = new EnvValidator(schema, options);
