@@ -20,3 +20,14 @@ module.exports = {
 Notes
 - Validating env at build time helps catch missing or invalid configuration before deployment.
 - If you prefer to keep secret values server-only, validate them in server-side code rather than injecting into client bundles.
+
+Try it online
+
+- StackBlitz: https://stackblitz.com/github/kasimlyee/dotenv-gad/tree/opt/quick-refractor/examples/nextjs
+- Run locally:
+
+```bash
+cd examples/nextjs
+npm ci
+npm run dev
+```

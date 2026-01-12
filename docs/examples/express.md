@@ -31,3 +31,14 @@ app.listen(env.PORT, () => console.log(`Server running on ${env.PORT}`));
 Notes
 - Use `includeRaw` during local debugging if you want raw values to appear in errors: `loadEnv(schema, { includeRaw: true })`.
 - For production, keep `includeRaw` disabled to avoid leaking values in logs.
+
+Try it online
+
+- StackBlitz: https://stackblitz.com/github/kasimlyee/dotenv-gad/tree/opt/quick-refractor/examples/express
+- Run locally:
+
+```bash
+cd examples/express
+npm ci
+npm start
+```
