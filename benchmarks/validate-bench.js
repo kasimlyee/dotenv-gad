@@ -1,4 +1,6 @@
 import { EnvValidator, defineSchema } from "../dist/index.js";
+import fs from "fs";
+import path from "path";
 
 const schema = defineSchema({
   PORT: { type: "port", required: true },
@@ -23,10 +25,23 @@ const input = {
 };
 
 const runs = 200000;
-console.time("validation");
+const start = process.hrtime.bigint();
 for (let i = 0; i < runs; i++) {
   v.validate(input);
 }
-console.timeEnd("validation");
-console.log(`${runs} runs`);
+const end = process.hrtime.bigint();
+const durationMs = Number(end - start) / 1e6;
+const msPerRun = durationMs / runs;
+const output = `${new Date().toISOString()} | runs=${runs} | totalMs=${durationMs.toFixed(3)} | msPerRun=${msPerRun.toFixed(6)}\n`;
+console.log(output);
+
+// Write to benchmarks/results.txt for CI collection
+const outDir = path.resolve(process.cwd(), "benchmarks");
+try {
+  fs.mkdirSync(outDir, { recursive: true });
+  fs.appendFileSync(path.join(outDir, "results.txt"), output);
+  console.log("Wrote benchmark results to benchmarks/results.txt");
+} catch (err) {
+  console.error("Failed to write benchmark results:", err);
+}
 
