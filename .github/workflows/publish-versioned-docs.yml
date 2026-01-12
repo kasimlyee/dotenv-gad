@@ -42,7 +42,7 @@ jobs:
           publish_branch: gh-pages
           destination_dir: v${{ env.VERSION }}
 
-      - name: Update versions index on gh-pages
+      - name: Update versions index on gh-pages (and ensure 'latest')
         uses: actions/github-script@v6
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -61,28 +61,41 @@ jobs:
             }
 
             const versionName = `v${process.env.VERSION}`;
-            const entry = { name: versionName, path: `/${versionName}/` };
-            if (!current.find((x) => x.name === entry.name)) {
-              current.unshift(entry);
-              const content = Buffer.from(JSON.stringify(current, null, 2)).toString('base64');
-              const updateParams = {
-                owner,
-                repo,
-                path,
-                message: `docs: add ${entry.name} to versions`,
-                content,
-                branch,
-              };
+            const versionEntry = { name: versionName, path: `/${versionName}/` };
 
-              try {
-                const existing = await github.rest.repos.getContent({ owner, repo, path, ref: branch });
-                updateParams.sha = existing.data.sha;
-              } catch (e) {
-                // file does not exist; create it
-              }
+            // Ensure version entry is present (and at front)
+            current = current.filter((x) => x.name !== versionEntry.name);
+            current.unshift(versionEntry);
 
-              await github.rest.repos.createOrUpdateFileContents(updateParams);
-              core.info(`Updated ${path} on ${branch}`);
-            } else {
-              core.info(`${entry.name} already in ${path}`);
+            // Ensure 'latest' entry exists and is first (alias to /latest/)
+            const latestEntry = { name: 'latest', path: '/latest/' };
+            current = current.filter((x) => x.name !== latestEntry.name);
+            current.unshift(latestEntry);
+
+            const content = Buffer.from(JSON.stringify(current, null, 2)).toString('base64');
+            const updateParams = {
+              owner,
+              repo,
+              path,
+              message: `docs: update versions (add ${versionEntry.name} and latest)`,
+              content,
+              branch,
+            };
+
+            try {
+              const existing = await github.rest.repos.getContent({ owner, repo, path, ref: branch });
+              updateParams.sha = existing.data.sha;
+            } catch (e) {
+              // file does not exist; create it
             }
+
+            await github.rest.repos.createOrUpdateFileContents(updateParams);
+            core.info(`Updated ${path} on ${branch}`);
+
+      - name: Publish docs to 'latest' alias
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs
+          publish_branch: gh-pages
+          destination_dir: latest

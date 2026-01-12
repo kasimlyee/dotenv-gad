@@ -56,9 +56,9 @@ console.log(`Server running on port ${env.PORT}`);
 
 Documentation
 
-Full documentation is available via GitHub Pages (published from `docs/`):
+[![Docs](https://img.shields.io/badge/docs-latest-blue?style=flat-square)](https://kasimlyee.github.io/dotenv-gad/latest/)
 
-https://kasimlyee.github.io/dotenv-gad/
+Full documentation is available via GitHub Pages (published from `docs/`).
 
 To preview locally:
 
