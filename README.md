@@ -54,6 +54,19 @@ const env = loadEnv(schema);
 console.log(`Server running on port ${env.PORT}`);
 ```
 
+Documentation
+
+Full documentation is available via GitHub Pages (published from `docs/`):
+
+https://kasimlyee.github.io/dotenv-gad/
+
+To preview locally:
+
+```bash
+npm ci
+npm run docs:serve
+```
+
 ## CLI Commands
 
 | Command | Description                        |
