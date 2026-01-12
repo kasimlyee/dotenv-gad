@@ -22,9 +22,18 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build docs (no-op for docsify)
+      - name: Setup Python and install MkDocs
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install MkDocs and theme
         run: |
-          echo 'Docsify: preparing docs for publish'
+          python -m pip install --upgrade pip
+          pip install mkdocs mkdocs-material
+
+      - name: Build docs (mkdocs)
+        run: mkdocs build --site-dir ./site
 
       - name: Debug Git state
         run: |
@@ -37,13 +46,13 @@ jobs:
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./docs
+          publish_dir: ./site
           publish_branch: gh-pages
           destination_dir: previews/pr-${{ github.event.pull_request.number }}
           allow_empty_commit: true
           user_name: 'github-actions[bot]'
           user_email: 'github-actions[bot]@users.noreply.github.com'
-          commit_message: 'docs: publish preview for PR #${{ github.event.pull_request.number }}'
+          commit_message: 'docs: publish preview for PR #${{ github.event.pull_request.number }}' 
 
 
       - name: Post preview comment on PR

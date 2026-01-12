@@ -18,7 +18,8 @@
     "format": "prettier --write \"src/**/*.ts\" \"__tests__/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\" \"__tests__/**/*.ts\"",
     "bench": "node benchmarks/validate-bench.js",
-    "docs:serve": "npx docsify-cli serve docs",
+    "docs:serve": "mkdocs serve -a 127.0.0.1:8000",
+    "docs:build": "mkdocs build -d site",
     "prepublishOnly": "npm run build && npm test",
     "prepare": "husky"
   },
@@ -75,7 +76,6 @@
     "@types/ora": "^3.1.0",
     "cross-env": "^7.0.3",
     "cross-env-shell": "^7.0.3",
-    "docsify-cli": "^4.4.0",
     "esbuild": "^0.25.5",
     "eslint": "^9.17.0",
     "globals": "^15.14.0",
