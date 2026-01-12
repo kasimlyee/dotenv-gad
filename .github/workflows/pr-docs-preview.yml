@@ -23,7 +23,7 @@ jobs:
         run: npm ci
 
       - name: Build docs (no-op for docsify)
-        run: echo 'Docsify: preparing docs for publish' 
+        run: echo "Docsify: preparing docs for publish"
 
       - name: Publish preview to gh-pages under previews/pr-<number>
         uses: peaceiris/actions-gh-pages@v3
