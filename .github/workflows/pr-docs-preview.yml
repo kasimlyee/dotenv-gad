@@ -23,7 +23,8 @@ jobs:
         run: npm ci
 
       - name: Build docs (no-op for docsify)
-        run: echo "Docsify: preparing docs for publish"
+        run: |
+          echo 'Docsify: preparing docs for publish'
 
       - name: Debug Git state
         run: |
