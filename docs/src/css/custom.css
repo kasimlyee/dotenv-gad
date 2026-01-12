@@ -28,3 +28,22 @@
   --ifm-color-primary-lightest: #4fddbf;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
 }
+.navbar-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;     /* or 32px */
+  height: 2.5rem;
+  padding: 0;
+  margin: 0 0.25rem;
+}
+
+.navbar-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.navbar-icon:hover {
+  opacity: 0.8;
+  transform: scale(1.1); /* optional nice effect */
+}

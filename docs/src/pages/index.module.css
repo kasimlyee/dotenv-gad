@@ -22,9 +22,6 @@
   justify-content: center;
 }
 
-.heroBanner {
-  padding: 4rem 0;
-}
 
 .badges img {
   margin: 0 6px 12px 0;
@@ -47,3 +44,14 @@
   padding: 4rem 0;
 }
 
+.heroBanner svg {
+  filter: drop-shadow(0 6px 16px rgba(249, 115, 22, 0.5));
+}
+
+.features svg {
+  transition: transform 0.2s;
+}
+
+.features svg:hover {
+  transform: scale(1.1);
+}
