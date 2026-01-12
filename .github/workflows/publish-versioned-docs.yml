@@ -1,0 +1,101 @@
+name: Publish versioned docs
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish-versioned-docs:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      NODE_OPTIONS: --experimental-vm-modules
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20' ("20")
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prepare version
+        run: |
+          echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_ENV
+          echo "DOCS_DIR=/v${GITHUB_REF_NAME#v}/" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Build docs (no-op for Docsify)
+        run: echo "Docsify does not require a build step"
+
+      - name: Publish docs to gh-pages under versioned path
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs
+          publish_branch: gh-pages
+          destination_dir: v${{ env.VERSION }}
+
+      - name: Update versions index on gh-pages (and ensure 'latest')
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const branch = 'gh-pages';
+            const path = '_versions.json';
+            let current;
+            try {
+              const res = await github.rest.repos.getContent({ owner, repo, path, ref: branch });
+              const buf = Buffer.from(res.data.content, 'base64').toString();
+              current = JSON.parse(buf);
+            } catch (e) {
+              current = [];
+            }
+
+            const versionName = `v${process.env.VERSION}`;
+            const versionEntry = { name: versionName, path: `/${versionName}/` };
+
+            // Ensure version entry is present (and at front)
+            current = current.filter((x) => x.name !== versionEntry.name);
+            current.unshift(versionEntry);
+
+            // Ensure 'latest' entry exists and is first (alias to /latest/)
+            const latestEntry = { name: 'latest', path: '/latest/' };
+            current = current.filter((x) => x.name !== latestEntry.name);
+            current.unshift(latestEntry);
+
+            const content = Buffer.from(JSON.stringify(current, null, 2)).toString('base64');
+            const updateParams = {
+              owner,
+              repo,
+              path,
+              message: `docs: update versions (add ${versionEntry.name} and latest)`,
+              content,
+              branch,
+            };
+
+            try {
+              const existing = await github.rest.repos.getContent({ owner, repo, path, ref: branch });
+              updateParams.sha = existing.data.sha;
+            } catch (e) {
+              // file does not exist; create it
+            }
+
+            await github.rest.repos.createOrUpdateFileContents(updateParams);
+            core.info(`Updated ${path} on ${branch}`);
+
+      - name: Publish docs to 'latest' alias
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs
+          publish_branch: gh-pages
+          destination_dir: latest

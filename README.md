@@ -54,6 +54,23 @@ const env = loadEnv(schema);
 console.log(`Server running on port ${env.PORT}`);
 ```
 
+Documentation
+
+[![Docs](https://img.shields.io/badge/docs-latest-blue?style=flat-square)](https://kasimlyee.github.io/dotenv-gad/latest/)
+
+Full documentation is available via GitHub Pages (published from `docs/`).
+
+To preview locally:
+
+```bash
+npm ci
+npm run docs:serve
+```
+
+Docs preview on PRs
+
+When you open or update a pull request that changes docs, an automated preview will be published to GitHub Pages under `previews/pr-<number>/` and a comment with the preview link will be posted on the PR. This makes it easy to review documentation changes without merging.
+
 ## CLI Commands
 
 | Command | Description                        |
@@ -159,6 +176,23 @@ Environment validation failed:
   - API_KEY: Must start with 'sk_' (received: "invalid")
 ```
 
+By default values in the report are redacted (sensitive values are always masked). You can opt-in to include raw values in error reports when instantiating the validator (useful for local debugging) by using the `includeRaw` option. If you also want to reveal values marked as `sensitive: true` set `includeSensitive` to `true` (use with caution).
+
+```ts
+// include raw values in errors (non-sensitive values only)
+import { loadEnv } from "dotenv-gad";
+const env = loadEnv(schema, { includeRaw: true });
+
+// or with finer control
+import { EnvValidator } from "dotenv-gad";
+const validator = new EnvValidator(schema, { includeRaw: true, includeSensitive: true });
+try {
+  validator.validate(process.env);
+} catch (err) {
+  console.error(String(err));
+}
+```
+
 ## more usages
 
 ### Environment-Specific Rules
@@ -197,6 +231,47 @@ Environment validation failed:
   }
 }
 ```
+
+### Grouping / Namespaced envs
+
+You can group related environment variables into a single object using `object` with `properties` and an optional `envPrefix` (defaults to `KEY_`):
+
+```ts
+const schema = defineSchema({
+  DATABASE: {
+    type: 'object',
+    envPrefix: 'DATABASE_', // optional; defaults to 'DATABASE_'
+    properties: {
+      DB_NAME: { type: 'string', required: true },
+      PORT: { type: 'port', default: 5432 },
+      PWD: { type: 'string', sensitive: true }
+    }
+  }
+});
+```
+
+Given the following environment:
+
+```
+DATABASE_DB_NAME=mydb
+DATABASE_PORT=5432
+DATABASE_PWD=supersecret
+```
+
+`loadEnv(schema)` will return:
+
+```ts
+{ DATABASE: { DB_NAME: 'mydb', PORT: 5432, PWD: 'supersecret' } }
+```
+
+Notes and behavior:
+
+- The default `envPrefix` is `${KEY}_` (for `DATABASE` it's `DATABASE_`) if you don't specify `envPrefix`.
+- Prefixed variables take precedence over a JSON top-level env var (e.g., `DATABASE` = '{...}'). If both are present, prefixed variables win and a warning is printed.
+- In strict mode (`{ strict: true }`), unexpected subkeys inside a group (e.g., `DATABASE_EXTRA`) will cause validation to fail.
+- `sensitive` and `includeRaw` behavior still applies for grouped properties: sensitive properties are still masked in errors unless `includeSensitive` is explicitly set.
+
+The CLI `sync` command will now generate grouped entries in `.env.example` for object properties so it's easier to scaffold grouped configuration.
 
 ## License
 

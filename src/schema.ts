@@ -27,6 +27,11 @@ export interface SchemaRule {
   error?: string;
   items?: SchemaRule;
   properties?: Record<string, SchemaRule>;
+  // Optional prefix for grouped environment variables. When set, variables
+  // like `PREFIX_KEY` will be mapped into the object. If omitted but
+  // `properties` exists, the default prefix `
+  // <SCHEMA_KEY>_` will be used when grouping is detected.
+  envPrefix?: string;
   env?: { [envName: string]: Partial<SchemaRule> };
 }
 

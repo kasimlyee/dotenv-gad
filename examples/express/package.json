@@ -1,0 +1,14 @@
+{
+  "name": "dotenv-gad-express-example",
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "NODE_ENV=development node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "dotenv": "^16.5.0",
+    "dotenv-gad": "file:../.."
+  }
+}

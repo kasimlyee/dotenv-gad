@@ -1,0 +1,40 @@
+name: Benchmark
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  schedule:
+    # daily run at 03:00 UTC
+    - cron: '0 3 * * *'
+
+jobs:
+  build-and-bench:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build --silent
+
+      - name: Run tests
+        run: npm test --silent
+
+      - name: Run benchmark
+        run: npm run bench --silent
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-results
+          path: benchmarks/results.txt
