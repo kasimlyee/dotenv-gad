@@ -23,18 +23,8 @@ jobs:
       - name: Install deps
         run: npm ci
 
-      - name: Setup Python and install MkDocs
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.x'
-
-      - name: Install MkDocs and theme
-        run: |
-          python -m pip install --upgrade pip
-          pip install mkdocs mkdocs-material
-
-      - name: Build docs (mkdocs)
-        run: mkdocs build --site-dir ./site
+      - name: Build docs (Docusaurus)
+        run: npm run docs:build
 
       - name: Debug Git state
         run: |
@@ -46,7 +36,7 @@ jobs:
       - name: Publish to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
-          publish_dir: ./site
+          publish_dir: ./build
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
           allow_empty_commit: true
