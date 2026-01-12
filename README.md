@@ -67,6 +67,10 @@ npm ci
 npm run docs:serve
 ```
 
+Docs preview on PRs
+
+When you open or update a pull request that changes docs, an automated preview will be published to GitHub Pages under `previews/pr-<number>/` and a comment with the preview link will be posted on the PR. This makes it easy to review documentation changes without merging.
+
 ## CLI Commands
 
 | Command | Description                        |
