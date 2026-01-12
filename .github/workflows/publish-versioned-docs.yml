@@ -20,7 +20,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20' ("20")
+          node-version: '20'
 
       - name: Install dependencies
         run: npm ci
@@ -32,7 +32,7 @@ jobs:
         shell: bash
 
       - name: Build docs (no-op for Docsify)
-        run: echo "Docsify does not require a build step"
+        run: echo 'Docsify does not require a build step'
 
       - name: Publish docs to gh-pages under versioned path
         uses: peaceiris/actions-gh-pages@v3

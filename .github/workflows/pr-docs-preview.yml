@@ -17,13 +17,13 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20' ("20")
+          node-version: '20'
 
       - name: Install dependencies
         run: npm ci
 
       - name: Build docs (no-op for docsify)
-        run: echo "Docsify: preparing docs for publish"
+        run: echo 'Docsify: preparing docs for publish' 
 
       - name: Publish preview to gh-pages under previews/pr-<number>
         uses: peaceiris/actions-gh-pages@v3

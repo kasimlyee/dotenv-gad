@@ -16,13 +16,13 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20' ("20")
+          node-version: '20'
 
       - name: Install deps
         run: npm ci
 
       - name: Build (no-op for docsify)
-        run: echo "Docsify does not require a build step"
+        run: echo 'Docsify does not require a build step' 
 
       - name: Publish to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3

@@ -15,7 +15,7 @@ describe("sensitive and raw error reporting", () => {
       const agg = err as AggregateError;
       const secretError = agg.errors.find((e: any) => e.key === "SECRET_KEY");
       expect(secretError).toBeDefined();
-      expect(secretError.value).toBe("****");
+      expect(secretError!.value).toBe("****");
     }
   });
 
@@ -31,7 +31,7 @@ describe("sensitive and raw error reporting", () => {
       const agg = err as AggregateError;
       const numError = agg.errors.find((e: any) => e.key === "NUM");
       expect(numError).toBeDefined();
-      expect(numError.value).toBe("not-a-number");
+      expect(numError!.value).toBe("not-a-number");
     }
   });
 
@@ -47,7 +47,7 @@ describe("sensitive and raw error reporting", () => {
     } catch (err: any) {
       const agg = err as AggregateError;
       const e = agg.errors.find((x: any) => x.key === "SECRET_KEY");
-      expect(e.value).toBe("****");
+      expect(e!.value).toBe("****");
     }
 
     const v2 = new EnvValidator(schema, { includeRaw: true, includeSensitive: true });
@@ -57,7 +57,7 @@ describe("sensitive and raw error reporting", () => {
     } catch (err: any) {
       const agg = err as AggregateError;
       const e = agg.errors.find((x: any) => x.key === "SECRET_KEY");
-      expect(e.value).toBe("not-a-number");
+      expect(e!.value).toBe("not-a-number");
     }
   });
 });
