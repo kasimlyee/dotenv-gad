@@ -20,6 +20,27 @@ export default function (program: Command) {
         Object.entries(schema).forEach(([key, rule]) => {
           if ((rule as SchemaRule).sensitive) return;
 
+          // If this is a grouped object with properties, emit grouped entries
+          const eff = rule as SchemaRule;
+          if (eff.type === "object" && eff.properties) {
+            const prefix = eff.envPrefix || `${key}_`;
+            exampleContent += `# ${eff.docs || "No description available"}\n`;
+            exampleContent += `# Group: ${key} (prefix=${prefix})\n`;
+
+            Object.entries(eff.properties).forEach(([prop, pRule]) => {
+              const pr = pRule as SchemaRule;
+              if (pr.sensitive) return;
+              exampleContent += `# ${pr.docs || "No description available"}\n`;
+              exampleContent += `# Type: ${pr.type}\n`;
+              if (pr.default !== undefined) {
+                exampleContent += `# Default: ${JSON.stringify(pr.default)}\n`;
+              }
+              exampleContent += `${prefix}${prop}=${pr.default ? JSON.stringify(pr.default) : ""}\n\n`;
+            });
+
+            return;
+          }
+
           exampleContent += `# ${
             (rule as SchemaRule).docs || "No description available"
           }\n`;

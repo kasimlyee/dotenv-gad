@@ -25,13 +25,65 @@ export class EnvValidator {
 
     const result: Record<string, any> = {};
 
+    // Build grouping map for object types that support envPrefix.
+    // We'll collect all prefixes first and then make a single pass over env keys
+    // to assemble grouped objects for each schema key.
+    const groupedEnv: Record<string, Record<string, any>> = {};
+    const prefixes: { key: string; prefix: string }[] = [];
+    for (const [k, r] of Object.entries(this.schema)) {
+      const eff = this.getEffectiveRule(k, r);
+      if (eff.type === "object" && eff.properties) {
+        const prefix = eff.envPrefix ?? `${k}_`;
+        prefixes.push({ key: k, prefix });
+        groupedEnv[k] = {};
+      }
+    }
+
+    const envKeys = Object.keys(env);
+    for (let i = 0; i < envKeys.length; i++) {
+      const eKey = envKeys[i];
+      for (let j = 0; j < prefixes.length; j++) {
+        const { key, prefix } = prefixes[j];
+        if (eKey.startsWith(prefix)) {
+          const subKey = eKey.slice(prefix.length);
+          groupedEnv[key][subKey] = env[eKey];
+        }
+      }
+    }
+
     // Micro-optimization: avoid creating intermediate arrays from Object.entries
     const schemaKeys = Object.keys(this.schema);
     for (let i = 0; i < schemaKeys.length; i++) {
       const key = schemaKeys[i];
       const rule = this.schema[key];
       try {
-        result[key] = this.validateKey(key, rule, env[key]);
+        // If we have grouped values for this key use them (preferred over JSON string)
+        const valToValidate = groupedEnv[key] && Object.keys(groupedEnv[key]).length > 0
+          ? groupedEnv[key]
+          : env[key];
+
+        // If both grouped and a top-level JSON value exist, prefer grouped and warn
+        if (groupedEnv[key] && Object.keys(groupedEnv[key]).length > 0 && env[key] !== undefined) {
+          
+          console.warn(`Both prefixed variables and top-level ${key} exist; prefixed vars are used`);
+        }
+
+        // If strict mode is enabled, and this key has grouped env vars, ensure there are no unexpected subkeys
+        if (this.options?.strict && groupedEnv[key] && Object.keys(groupedEnv[key]).length > 0) {
+          const propNames = rule.properties ? Object.keys(rule.properties) : [];
+          const extras = Object.keys(groupedEnv[key]).filter((s) => !propNames.includes(s));
+          if (extras.length > 0) {
+            this.errors.push({
+              key,
+              message: `Unexpected grouped environment variables: ${extras.join(", ")}`,
+              value: Object.keys(groupedEnv[key]),
+              rule,
+            });
+            continue;
+          }
+        }
+
+        result[key] = this.validateKey(key, rule, valToValidate);
       } catch (error) {
         if (error instanceof Error) {
           // Decide what to include in the error report depending on options:
@@ -207,6 +259,7 @@ export class EnvValidator {
         if (port < 1 || port > 65535) {
           throw new Error("Must be between 1 and 65535");
         }
+        value = port;
         break;
 
       case "json":

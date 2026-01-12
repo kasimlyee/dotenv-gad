@@ -215,6 +215,47 @@ try {
 }
 ```
 
+### Grouping / Namespaced envs
+
+You can group related environment variables into a single object using `object` with `properties` and an optional `envPrefix` (defaults to `KEY_`):
+
+```ts
+const schema = defineSchema({
+  DATABASE: {
+    type: 'object',
+    envPrefix: 'DATABASE_', // optional; defaults to 'DATABASE_'
+    properties: {
+      DB_NAME: { type: 'string', required: true },
+      PORT: { type: 'port', default: 5432 },
+      PWD: { type: 'string', sensitive: true }
+    }
+  }
+});
+```
+
+Given the following environment:
+
+```
+DATABASE_DB_NAME=mydb
+DATABASE_PORT=5432
+DATABASE_PWD=supersecret
+```
+
+`loadEnv(schema)` will return:
+
+```ts
+{ DATABASE: { DB_NAME: 'mydb', PORT: 5432, PWD: 'supersecret' } }
+```
+
+Notes and behavior:
+
+- The default `envPrefix` is `${KEY}_` (for `DATABASE` it's `DATABASE_`) if you don't specify `envPrefix`.
+- Prefixed variables take precedence over a JSON top-level env var (e.g., `DATABASE` = '{...}'). If both are present, prefixed variables win and a warning is printed.
+- In strict mode (`{ strict: true }`), unexpected subkeys inside a group (e.g., `DATABASE_EXTRA`) will cause validation to fail.
+- `sensitive` and `includeRaw` behavior still applies for grouped properties: sensitive properties are still masked in errors unless `includeSensitive` is explicitly set.
+
+The CLI `sync` command will now generate grouped entries in `.env.example` for object properties so it's easier to scaffold grouped configuration.
+
 ## License
 
 MIT © [Kasim Lyee]
