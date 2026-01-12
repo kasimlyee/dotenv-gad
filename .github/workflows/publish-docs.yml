@@ -24,6 +24,7 @@ jobs:
         run: npm ci
 
       - name: Build docs (Docusaurus)
+        working-directory: ./docs
         run: npm run docs:build
 
       - name: Debug Git state
