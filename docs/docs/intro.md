@@ -2,7 +2,7 @@
 sidebar_position: 1
 ---
 
-# dotenv-gad — Documentation
+# Introduction
 
 Welcome to the official documentation for **dotenv-gad** — a tiny, TypeScript-friendly environment validation library for Node.js.
 

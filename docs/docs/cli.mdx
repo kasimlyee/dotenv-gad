@@ -2,13 +2,16 @@
 
 The CLI exposes convenient commands for working with your schema and environment files.
 
-Commands
+## CLI Commands
 
-- `npx dotenv-gad check --strict` — Validate `.env` against the schema. Use `--strict` to fail on extra variables.
-- `npx dotenv-gad sync` — Generate or update `.env.example` from your schema (sensitive values are excluded).
-- `npx dotenv-gad types` — Generate `env.d.ts` TypeScript types for your schema.
-- `npx dotenv-gad init` — Create a starter schema.
-- `npx dotenv-gad fix` — Attempt interactive fixes for common issues.
+| Command | Description                        |
+| ------- | ---------------------------------- |
+| `check` | Validate .env against schema       |
+| `sync`  | Generate/update .env.example       |
+| `types` | Generate env.d.ts TypeScript types |
+| `init`  | Create starter schema              |
+| `fix`   | Fixes environment issues           |
+| `docs`  | Generates .env documentation       |
 
 Examples
 

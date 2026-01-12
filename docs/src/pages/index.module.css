@@ -21,3 +21,29 @@
   align-items: center;
   justify-content: center;
 }
+
+.heroBanner {
+  padding: 4rem 0;
+}
+
+.badges img {
+  margin: 0 6px 12px 0;
+}
+
+.buttons {
+  margin-top: 1.5rem;
+}
+
+.features {
+  padding: 4rem 0;
+}
+
+.quickstart {
+  background: var(--ifm-color-emphasis-100);
+  padding: 4rem 0;
+}
+
+.community {
+  padding: 4rem 0;
+}
+
