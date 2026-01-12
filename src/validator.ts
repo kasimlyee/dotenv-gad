@@ -25,7 +25,11 @@ export class EnvValidator {
 
     const result: Record<string, any> = {};
 
-    for (const [key, rule] of Object.entries(this.schema)) {
+    // Micro-optimization: avoid creating intermediate arrays from Object.entries
+    const schemaKeys = Object.keys(this.schema);
+    for (let i = 0; i < schemaKeys.length; i++) {
+      const key = schemaKeys[i];
+      const rule = this.schema[key];
       try {
         result[key] = this.validateKey(key, rule, env[key]);
       } catch (error) {
@@ -33,7 +37,8 @@ export class EnvValidator {
           this.errors.push({
             key,
             message: error.message,
-            value: env[key],
+            // redact sensitive values by default
+            value: this.redactValue(env[key], rule.sensitive),
             rule,
           });
         }
@@ -49,7 +54,10 @@ export class EnvValidator {
     }
 
     if (this.options?.strict) {
-      const extraVars = Object.keys(env).filter((k) => !(k in this.schema));
+      const extraVars: string[] = [];
+      for (const k in env) {
+        if (!(k in this.schema)) extraVars.push(k);
+      }
       if (extraVars.length > 0) {
         throw new Error(
           `Unexpected environment variables: ${extraVars.join(", ")}`
@@ -59,6 +67,33 @@ export class EnvValidator {
     return result;
   }
 
+  // Redact or trim sensitive values for error reporting
+  private redactValue(value: any, sensitive?: boolean) {
+    if (value === undefined) return undefined;
+    if (sensitive) return "****";
+    if (typeof value !== "string") return value;
+    if (value.length > 64) {
+      return `${value.slice(0, 4)}...${value.slice(-4)}`;
+    }
+    return value;
+  }
+
+  // Try to quickly determine if a string *might* be JSON before parsing to avoid
+  // costly exceptions in the hot path for clearly non-JSON values.
+  private tryParseJSON(value: any) {
+    if (typeof value !== "string") return { ok: false } as const;
+    const s = value.trim();
+    if (!s) return { ok: false } as const;
+    const c = s[0];
+    if (c !== "{" && c !== "[" && c !== '"' && c !== "t" && c !== "f" && c !== "n" && (c < "0" || c > "9") && c !== "-") {
+      return { ok: false } as const;
+    }
+    try {
+      return { ok: true as const, value: JSON.parse(s) };
+    } catch {
+      return { ok: false } as const;
+    }
+  }
 
   private validateKey(key: string, rule: SchemaRule, value: any) {
     const effectiveRule = this.getEffectiveRule(key, rule);
@@ -159,20 +194,21 @@ export class EnvValidator {
         break;
 
       case "json":
-        try {
-          value = JSON.parse(value);
-        } catch {
+        // fast-path non-json strings
+        const maybeJson = this.tryParseJSON(value);
+        if (!maybeJson.ok) {
           throw new Error("Must be valid JSON");
         }
+        value = maybeJson.value;
         break;
 
       case "array":
         if (!Array.isArray(value)) {
-          try {
-            value = JSON.parse(value);
-          } catch {
+          const parsed = this.tryParseJSON(value);
+          if (!parsed.ok || !Array.isArray(parsed.value)) {
             throw new Error("Must be a valid array or JSON array string");
           }
+          value = parsed.value;
         }
 
         if (effectiveRule.items) {
@@ -192,18 +228,18 @@ export class EnvValidator {
 
       case "object":
         if (typeof value === "string") {
-          try {
-            value = JSON.parse(value);
-          } catch {
+          const parsed = this.tryParseJSON(value);
+          if (!parsed.ok || typeof parsed.value !== "object" || Array.isArray(parsed.value)) {
             throw new Error("Must be a valid object or JSON string");
           }
+          value = parsed.value;
         }
 
         if (effectiveRule.properties) {
           const obj: Record<string, any> = {};
-          for (const [prop, propRule] of Object.entries(
-            effectiveRule.properties
-          )) {
+          for (const prop in effectiveRule.properties) {
+            if (!Object.prototype.hasOwnProperty.call(effectiveRule.properties, prop)) continue;
+            const propRule = effectiveRule.properties[prop];
             try {
               obj[prop] = this.validateKey(
                 `${key}.${prop}`,

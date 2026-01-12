@@ -17,6 +17,7 @@
     "lint:fix": "eslint src --ext .ts --fix",
     "format": "prettier --write \"src/**/*.ts\" \"__tests__/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\" \"__tests__/**/*.ts\"",
+    "bench": "node benchmarks/validate-bench.js",
     "prepublishOnly": "npm run build && npm test",
     "prepare": "husky"
   },
