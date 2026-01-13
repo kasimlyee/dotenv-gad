@@ -20,6 +20,7 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies
+        working-directory: docs
         run: npm ci
 
       - name: Build docs (Docusaurus)
@@ -57,3 +58,4 @@ jobs:
             const url = `https://${owner}.github.io/${repo}/previews/pr-${pr}/`;
             const body = `📄 Docs preview available: ${url}\n\nIf you update docs in this PR, the preview will be refreshed.`;
             await github.rest.issues.createComment({ owner, repo, issue_number: pr, body });
+
