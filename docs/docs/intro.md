@@ -8,9 +8,9 @@ Welcome to the official documentation for **dotenv-gad** — a tiny, TypeScript-
 
 Use the sidebar to navigate. Below are quick links:
 
-- Quick Start: [guide/usage.md](guide/usage.md)
-- Grouping: [guide/grouping.md](guide/grouping.md)
-- CLI: [cli.md](cli.md)
+- Quick Start: [Quick Start](Getting Started/usage.md)
+- Grouping: [Grouping](guide/grouping.md)
+- CLI: [CLI](cli.mdx)
 - Schema reference: [reference/schema.md](reference/schema.md)
 
 If you find missing info or want to contribute docs, open a PR in this repository.
