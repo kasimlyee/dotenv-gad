@@ -1,5 +1,5 @@
-import { SchemaDefinition, SchemaRule } from "./schema.js";
-import { AggregateError } from "./errors.js";
+import { SchemaDefinition, SchemaRule } from "./schema";
+import { AggregateError } from "./errors";
 
 export class EnvValidator {
   private errors: {

@@ -2,8 +2,8 @@ import { Command } from "commander";
 import chalk from "chalk";
 import ora from "ora";
 import { writeFileSync } from "fs";
-import { loadSchema } from "./utils.js";
-import { SchemaRule } from "../../schema.js";
+import { loadSchema } from "./utils";
+import { SchemaRule } from "../../schema";
 
 function getTypeForRule(rule: SchemaRule): string {
   switch (rule.type) {

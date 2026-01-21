@@ -1,4 +1,4 @@
-import { SchemaDefinition } from "./schema.js";
+import { SchemaDefinition } from "./schema";
 
 /**
  * Compose multiple schema definitions into a single one.
