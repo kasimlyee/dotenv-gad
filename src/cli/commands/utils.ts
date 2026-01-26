@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync, unlinkSync, existsSync } from "fs";
 import { dirname, join, resolve } from "path";
 import { fileURLToPath, pathToFileURL } from "url";
 import { transformSync } from "esbuild";
-import { SchemaDefinition } from "../../schema";
+import { SchemaDefinition } from "../../schema.js";
 import Chalk from "chalk";
 import inquirer from "inquirer";
 

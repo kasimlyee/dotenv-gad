@@ -1,9 +1,9 @@
 import { Command } from "commander";
 import chalk from "chalk";
 import inquirer from "inquirer";
-import { loadSchema, applyFix } from "./utils";
-import { validateEnv } from "../../index";
-import { AggregateError } from "../../errors";
+import { loadSchema, applyFix } from "./utils.js";
+import { validateEnv } from "../../index.js";
+import { AggregateError } from "../../errors.js";
 import dotenv from "dotenv";
 
 export default function (program: Command) {

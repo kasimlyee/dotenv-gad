@@ -1,6 +1,6 @@
-import { SchemaDefinition } from "./schema";
+import { SchemaDefinition } from "./schema.js";
 import dotenv from "dotenv";
-import { EnvValidator } from "./validator";
+import { EnvValidator } from "./validator.js";
 
 /**
  * Load the environment variables from a .env file, validate them against the schema

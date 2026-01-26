@@ -1,9 +1,9 @@
 import { Command } from "commander";
 import chalk from "chalk";
 import ora from "ora";
-import {validateEnv} from "../../index"
-import { AggregateError } from "../../errors";
-import { loadSchema } from "./utils";
+import {validateEnv} from "../../index.js"
+import { AggregateError } from "../../errors.js";
+import { loadSchema } from "./utils.js";
 
 export default function (program: Command) {
   return new Command("check")

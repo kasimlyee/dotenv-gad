@@ -1,4 +1,4 @@
-import { SchemaRule } from "./schema";
+import { SchemaRule } from "./schema.js";
 
 export class EnvValidationError extends Error {
   constructor(

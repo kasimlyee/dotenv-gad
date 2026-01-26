@@ -1,10 +1,10 @@
-import { EnvValidator } from "./validator";
-import { defineSchema, SchemaDefinition, SchemaRule } from "./schema";
-import { AggregateError, EnvValidationError } from "./errors";
-import { loadEnv, createEnvProxy } from "./utils";
-import { composeSchema } from "./compose";
-import loadSchema from "./cli/commands/types";
-import { applyFix } from "./cli/commands/utils";
+import { EnvValidator } from "./validator.js";
+import { defineSchema, SchemaDefinition, SchemaRule } from "./schema.js";
+import { AggregateError, EnvValidationError } from "./errors.js";
+import { loadEnv, createEnvProxy } from "./utils.js";
+import { composeSchema } from "./compose.js";
+import loadSchema from "./cli/commands/types.js";
+import { applyFix } from "./cli/commands/utils.js";
 import dotenv from "dotenv";
 
 export {

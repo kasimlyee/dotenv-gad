@@ -6,12 +6,12 @@ import figlet from "figlet";
 import { readFileSync } from "fs";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
-import checkCommand from "./commands/check";
-import syncCommand from "./commands/sync";
-import typesCommand from "./commands/types";
-import initCommand from "./commands/init";
-import fixCommand from "./commands/fix";
-import docsCommand from "./commands/docs";
+import checkCommand from "./commands/check.js";
+import syncCommand from "./commands/sync.js";
+import typesCommand from "./commands/types.js";
+import initCommand from "./commands/init.js";
+import fixCommand from "./commands/fix.js";
+import docsCommand from "./commands/docs.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const pkg = JSON.parse(

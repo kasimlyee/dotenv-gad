@@ -2,8 +2,8 @@ import { Command } from "commander";
 import chalk from "chalk";
 import ora from "ora";
 import { writeFileSync } from "fs";
-import { loadSchema } from "./utils";
-import { SchemaRule } from "../../index";
+import { loadSchema } from "./utils.js";
+import { SchemaRule } from "../../index.js";
 
 export default function (program: Command) {
   return new Command("sync")

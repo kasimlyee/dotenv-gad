@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { loadSchema } from "./utils";
+import { loadSchema } from "./utils.js";
 import { writeFileSync } from "fs";
 
 export default function (program: Command) {
