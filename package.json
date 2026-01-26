@@ -91,7 +91,5 @@
     "tsup": "^8.5.1",
     "typescript-eslint": "^8.19.1"
   },
-  "dependencies": {
-    "dotenv-gad": "file:dotenv-gad-1.2.2.tgz"
-  }
+  "dependencies": {}
 }
