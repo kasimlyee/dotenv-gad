@@ -32,6 +32,7 @@ jobs:
         shell: bash
 
       - name: Install dependencies
+        working-directory: docs
         run: npm ci
 
       - name: Build docs (Docusaurus)
@@ -118,4 +119,5 @@ jobs:
           user_name: 'github-actions[bot]'
           user_email: 'github-actions[bot]@users.noreply.github.com'
           commit_message: 'docs: publish latest alias (gh-pages)'
+
 
