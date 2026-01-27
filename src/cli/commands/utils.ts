@@ -22,7 +22,16 @@ export async function loadSchema(
 
   const importModule = async(filePath: string) => {
     const fileUrl = pathToFileURL(filePath).href;
-    return (await import(`${fileUrl}?t=${Date.now()}`)).default;
+
+    const imported = await import(`${fileUrl}?t=${Date.now()}`);
+
+    const schema = imported.default || imported.schema || imported;
+
+    if(!schema || typeof schema !== "object"){
+      throw new Error(`Schema not found. Ensure you 'export default' or export const schema' in your file.`)
+    }
+    
+    return schema
   }
   const loadTsModule = async (
     tsFilePath: string
