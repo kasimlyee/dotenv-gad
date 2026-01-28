@@ -5,6 +5,7 @@ import { loadEnv, createEnvProxy } from "./utils.js";
 import { composeSchema } from "./compose.js";
 import loadSchema from "./cli/commands/types.js";
 import { applyFix } from "./cli/commands/utils.js";
+import { ExtractEnv } from "./types.js";
 import dotenv from "dotenv";
 
 export {
@@ -18,7 +19,7 @@ export {
   loadSchema,
   applyFix,
 };
-export type { SchemaDefinition, SchemaRule };
+export type { SchemaDefinition, SchemaRule, ExtractEnv };
 
 export function validateEnv(
   schema: SchemaDefinition,

@@ -37,13 +37,20 @@ export interface SchemaRule {
 
 export type SchemaDefinition = Record<string, SchemaRule>;
 
+
 /**
- * Define a schema for a set of environment variables.
+ * A type-safe way to define your environment schema.
  *
- * @param schema A record where each key is the name of an environment variable
- * and the value is a `SchemaRule` object that defines the rules for that
- * variable.
+ * @example
+ * const schema = defineSchema({
+ *   APP_NAME: { type: "string", required: true },
+ *   APP_PORT: { type: "number", default: 3000 },
+ * });
+ *
+ * @template S
+ * @param {S} schema - Environment schema definition
+ * @returns {S} - The same schema definition, but with type safety
  */
-export function defineSchema(schema: SchemaDefinition) {
+export function defineSchema<const S extends SchemaDefinition>(schema: S): S {
   return schema;
 }

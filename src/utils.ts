@@ -1,23 +1,28 @@
 import { SchemaDefinition } from "./schema.js";
 import dotenv from "dotenv";
 import { EnvValidator } from "./validator.js";
+import type { InferEnv } from "./types.js";
+
 
 /**
- * Load the environment variables from a .env file, validate them against the schema
- * and return an object with the validated values.
+ * Loads environment variables from .env file and validates them against
+ * the given schema.
  *
- * @param schema The schema definition for the environment variables.
- * @param options Options for the validation process.
- *
- * @returns A validated object with the environment variables.
+ * @template S The type of the schema definition.
+ * @param {S} schema The schema definition for the environment variables.
+ * @param {Object} [options] Optional options for the validation process.
+ * @param {boolean} [options.strict] When true, fail on environment variables not present in the schema.
+ * @param {boolean} [options.includeRaw] Include raw values in error reports (non-sensitive by default).
+ * @param {boolean} [options.includeSensitive] When used with `includeRaw`, will reveal values marked sensitive (use only for local debugging).
+ * @returns {InferEnv<S>} The validated environment variables.
  */
-export function loadEnv(
-  schema: SchemaDefinition,
+export function loadEnv<S extends SchemaDefinition>(
+  schema: S,
   options?: { strict?: boolean; includeRaw?: boolean; includeSensitive?: boolean }
-) {
+): InferEnv<S> {
   const env = dotenv.config().parsed || {};
   const validator = new EnvValidator(schema, options);
-  return validator.validate(env);
+  return validator.validate(env) as InferEnv<S>;
 }
 
 /**
