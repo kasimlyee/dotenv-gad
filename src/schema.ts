@@ -39,11 +39,16 @@ export type SchemaDefinition = Record<string, SchemaRule>;
 
 /**
  * Define a schema for a set of environment variables.
+ * 
+ * IMPORTANT: Use `as const` when defining schemas for type inference
  *
- * @param schema A record where each key is the name of an environment variable
- * and the value is a `SchemaRule` object that defines the rules for that
- * variable.
+ * @example
+ * ```typescript
+ * const schema = defineSchema({
+   PORT:{type: "number",default: 3000},
+   DB_HOST:{type: "string", required: true},
+ } as const);
  */
-export function defineSchema(schema: SchemaDefinition) {
+export function defineSchema<const S extends SchemaDefinition>(schema: S): S {
   return schema;
 }
