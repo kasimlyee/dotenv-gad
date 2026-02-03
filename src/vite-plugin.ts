@@ -23,4 +23,4 @@
 import { createRequire } from "node:module";
 import { resolve } from "node:path";
 import { existsSync, writeFileSync, realpathSync } from "node:fs";
-import type {Plugin, Vite }
+import type {Plugin, ViteDevServer, HmrContext, ResolvedConfig } from "vite"
