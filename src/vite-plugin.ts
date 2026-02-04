@@ -1,5 +1,5 @@
 /**
- * Vite-plugin-dotenv-gad
+ * Vite-dotenv-gad
  * 
  * Runs dotenv-gad validation exclusively in Node.js (inside Vite hooks),
  * then exposes the filtered, validated env through a virtual module.
@@ -19,8 +19,6 @@
  *      console.log(env.VITE_API_URL);
  * 
  */
-
-import { createRequire } from "node:module";
 import { resolve } from "node:path";
 import { existsSync, writeFileSync, realpathSync } from "node:fs";
 import type {Plugin, ViteDevServer, HmrContext, ResolvedConfig } from "vite"
