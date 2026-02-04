@@ -3,7 +3,7 @@ import { defineSchema, SchemaDefinition, SchemaRule } from "./schema.js";
 import { AggregateError, EnvValidationError } from "./errors.js";
 import { loadEnv, createEnvProxy } from "./utils.js";
 import { composeSchema } from "./compose.js";
-import loadSchema from "./cli/commands/types.js";
+import {loadSchema} from "./cli/commands/utils.js";
 import { applyFix } from "./cli/commands/utils.js";
 import { ExtractEnv } from "./types.js";
 import dotenv from "dotenv";
