@@ -20,7 +20,7 @@ export function loadEnv<S extends SchemaDefinition>(
   schema: S,
   options?: { strict?: boolean; includeRaw?: boolean; includeSensitive?: boolean }
 ): InferEnv<S> {
-  const env = dotenv.config().parsed || {};
+  const env = dotenv.config({debug: false}).parsed || {};
   const validator = new EnvValidator(schema, options);
   return validator.validate(env) as InferEnv<S>;
 }

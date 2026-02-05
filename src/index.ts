@@ -5,7 +5,7 @@ import { loadEnv, createEnvProxy } from "./utils.js";
 import { composeSchema } from "./compose.js";
 import {loadSchema} from "./cli/commands/utils.js";
 import { applyFix } from "./cli/commands/utils.js";
-import { ExtractEnv } from "./types.js";
+import { ExtractEnv, InferEnv } from "./types.js";
 import dotenv from "dotenv";
 
 export {
@@ -19,13 +19,13 @@ export {
   loadSchema,
   applyFix,
 };
-export type { SchemaDefinition, SchemaRule, ExtractEnv };
+export type { SchemaDefinition, SchemaRule, ExtractEnv, InferEnv };
 
 export function validateEnv(
   schema: SchemaDefinition,
   options?: { strict?: boolean }
 ) {
-  const env = dotenv.config().parsed || {};
+  const env = dotenv.config({debug: false}).parsed || {};
   const validator = new EnvValidator(schema, options);
   return validator.validate(env);
 }
