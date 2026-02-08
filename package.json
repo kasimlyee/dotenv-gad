@@ -40,19 +40,15 @@
   "exports": {
     ".": {
       "types": "./dist/types/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
-      
+      "import": "./dist/index.js"
     },
-    "./vite":{
+    "./vite": {
       "types": "./dist/types/vite-plugin.d.ts",
-      "import": "./dist/vite-plugin.js",
-      "require":"./dist/vite-plugin.cjs"
+      "import": "./dist/vite-plugin.js"
     },
-    "./client":{
+    "./client": {
       "types": "./dist/types/client.d.ts",
-      "import": "./dist/client.js",
-      "require":"./dist/client.cjs"
+      "import": "./dist/client.js"
     },
     "./package.json": "./package.json"
   },

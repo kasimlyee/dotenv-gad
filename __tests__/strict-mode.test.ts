@@ -9,7 +9,7 @@ describe("Strict Mode Validation", () => {
     process.env = { API_KEY: "123", EXTRA_VAR: "x" };
     const validator = new EnvValidator(schema, { strict: true });
     expect(() => validator.validate(process.env)).toThrow(
-      "Unexpected environment variables: EXTRA_VAR"
+      "Environment validation failed: EXTRA_VAR"
     );
   });
 

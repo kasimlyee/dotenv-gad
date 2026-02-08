@@ -23,9 +23,9 @@ export type { SchemaDefinition, SchemaRule, ExtractEnv, InferEnv };
 
 export function validateEnv(
   schema: SchemaDefinition,
-  options?: { strict?: boolean }
+  options?: { strict?: boolean; path?: string }
 ) {
-  const env = dotenv.config({debug: false}).parsed || {};
+  const env = dotenv.config({debug: false, path: options?.path}).parsed || {};
   const validator = new EnvValidator(schema, options);
   return validator.validate(env);
 }

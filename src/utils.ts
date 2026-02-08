@@ -14,13 +14,14 @@ import type { InferEnv } from "./types.js";
  * @param {boolean} [options.strict] When true, fail on environment variables not present in the schema.
  * @param {boolean} [options.includeRaw] Include raw values in error reports (non-sensitive by default).
  * @param {boolean} [options.includeSensitive] When used with `includeRaw`, will reveal values marked sensitive (use only for local debugging).
+ * @param {string} [options.path] Path to the .env file to load (defaults to `.env` in cwd).
  * @returns {InferEnv<S>} The validated environment variables.
  */
 export function loadEnv<S extends SchemaDefinition>(
   schema: S,
-  options?: { strict?: boolean; includeRaw?: boolean; includeSensitive?: boolean }
+  options?: { strict?: boolean; includeRaw?: boolean; includeSensitive?: boolean; path?: string }
 ): InferEnv<S> {
-  const env = dotenv.config({debug: false}).parsed || {};
+  const env = dotenv.config({debug: false, path: options?.path}).parsed || {};
   const validator = new EnvValidator(schema, options);
   return validator.validate(env) as InferEnv<S>;
 }
@@ -39,13 +40,12 @@ export function createEnvProxy<T extends Record<string, any>>(
 ): T {
   return new Proxy(validatedEnv, {
     get(target, prop) {
-      const value = target[prop as keyof T];
-      if (value === undefined) {
+      if (typeof prop === "string" && !(prop in target)) {
         throw new Error(
-          `Environment variable ${String(prop)} is not validated`
+          `Environment variable ${prop} is not validated`
         );
       }
-      return value;
+      return target[prop as keyof T];
     },
   });
 }

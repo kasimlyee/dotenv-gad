@@ -18,6 +18,7 @@ export default function (program: Command) {
         const schema = await loadSchema(rootOpts.schema);
         const env = validateEnv(schema, {
           strict: option.strict,
+          path: rootOpts.env,
         });
 
         spinner.succeed(chalk.green("Environment validation passed!"));

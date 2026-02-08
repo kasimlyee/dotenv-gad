@@ -4,7 +4,6 @@ import inquirer from "inquirer";
 import { loadSchema, applyFix } from "./utils.js";
 import { validateEnv } from "../../index.js";
 import { AggregateError } from "../../errors.js";
-import dotenv from "dotenv";
 
 export default function (program: Command) {
   return new Command("fix")
@@ -12,14 +11,11 @@ export default function (program: Command) {
     .action(async (options, command) => {
       const rootOpts = command.parent.opts();
       const schema = await loadSchema(rootOpts.schema);
+      const envPath = rootOpts.env || ".env";
 
       try {
-        // Load the current .env file
-        const envPath = rootOpts.env || ".env";
-        dotenv.config({ path: envPath });
-
         // Try to validate - if it succeeds, there are no issues
-        validateEnv(schema);
+        validateEnv(schema, { path: envPath });
         console.log(chalk.green("✓ No issues found! Environment is valid."));
         return;
       } catch (error) {

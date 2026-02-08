@@ -113,6 +113,24 @@ export class EnvValidator {
       }
     }
 
+    if (this.options?.strict) {
+      const prefixedKeys = new Set<string>();
+      for (const p of prefixes) {
+        for (const eKey of envKeys) {
+          if (eKey.startsWith(p.prefix)) prefixedKeys.add(eKey);
+        }
+      }
+
+      for (const k of envKeys) {
+        if (!(k in this.schema) && !prefixedKeys.has(k)) {
+          this.errors.push({
+            key: k,
+            message: `Unexpected environment variable`,
+          });
+        }
+      }
+    }
+
     if (this.errors.length > 0) {
       const keys = this.errors.map((e) => e.key).join(", ");
       throw new AggregateError(
@@ -121,17 +139,6 @@ export class EnvValidator {
       );
     }
 
-    if (this.options?.strict) {
-      const extraVars: string[] = [];
-      for (const k in env) {
-        if (!(k in this.schema)) extraVars.push(k);
-      }
-      if (extraVars.length > 0) {
-        throw new Error(
-          `Unexpected environment variables: ${extraVars.join(", ")}`
-        );
-      }
-    }
     return result;
   }
 
@@ -178,12 +185,12 @@ export class EnvValidator {
     switch (effectiveRule.type) {
       case "string":
         value = String(value).trim();
-        if (effectiveRule.minLength && value.length < effectiveRule.minLength) {
+        if (effectiveRule.minLength !== undefined && value.length < effectiveRule.minLength) {
           throw new Error(
             `Environment variable ${key} must be at least ${effectiveRule.minLength} characters`
           );
         }
-        if (effectiveRule.maxLength && value.length > effectiveRule.maxLength) {
+        if (effectiveRule.maxLength !== undefined && value.length > effectiveRule.maxLength) {
           throw new Error(
             `Environment variable ${key} must be at most ${effectiveRule.maxLength} characters`
           );
@@ -255,7 +262,7 @@ export class EnvValidator {
         break;
       case "port":
         const port = Number(value);
-        if (isNaN(port)) throw new Error("Must be a number");
+        if (isNaN(port) || !Number.isInteger(port)) throw new Error("Must be an integer");
         if (port < 1 || port > 65535) {
           throw new Error("Must be between 1 and 65535");
         }
