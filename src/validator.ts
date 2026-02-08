@@ -1,5 +1,5 @@
 import { SchemaDefinition, SchemaRule } from "./schema.js";
-import { AggregateError } from "./errors.js";
+import { EnvAggregateError } from "./errors.js";
 
 export class EnvValidator {
   private errors: {
@@ -133,7 +133,7 @@ export class EnvValidator {
 
     if (this.errors.length > 0) {
       const keys = this.errors.map((e) => e.key).join(", ");
-      throw new AggregateError(
+      throw new EnvAggregateError(
         this.errors,
         `Environment validation failed: ${keys}`
       );

@@ -3,7 +3,7 @@ import chalk from "chalk";
 import inquirer from "inquirer";
 import { loadSchema, applyFix } from "./utils.js";
 import { validateEnv } from "../../index.js";
-import { AggregateError } from "../../errors.js";
+import { EnvAggregateError } from "../../errors.js";
 
 export default function (program: Command) {
   return new Command("fix")
@@ -19,7 +19,7 @@ export default function (program: Command) {
         console.log(chalk.green("✓ No issues found! Environment is valid."));
         return;
       } catch (error) {
-        if (error instanceof AggregateError) {
+        if (error instanceof EnvAggregateError) {
           console.log(chalk.yellow(`\nFound ${error.errors.length} issue(s):\n`));
           error.errors.forEach((e) => {
             console.log(`  ${chalk.red("✗")} ${chalk.yellow(e.key)}: ${e.message}`);

@@ -1,6 +1,7 @@
 import { readFileSync, writeFileSync, unlinkSync, existsSync } from "fs";
 import { dirname, join, resolve } from "path";
 import { fileURLToPath, pathToFileURL } from "url";
+import { randomBytes } from "crypto";
 import { transformSync } from "esbuild";
 import { SchemaDefinition } from "../../schema.js";
 import Chalk from "chalk";
@@ -36,7 +37,7 @@ export async function loadSchema(
   const loadTsModule = async (
     tsFilePath: string
   ): Promise<SchemaDefinition> => {
-    const tempFile = join(__dirname, `../../temp-schema-${Date.now()}.mjs`);
+    const tempFile = join(__dirname, `../../temp-schema-${randomBytes(8).toString("hex")}.mjs`);
     try {
       const tsCode = readFileSync(tsFilePath, "utf-8");
       const { code } = transformSync(tsCode, {
@@ -113,12 +114,15 @@ export async function applyFix(
       },
     });
 
+    // Sanitize: strip newlines and carriage returns to prevent .env injection
+    const sanitized = String(value).replace(/[\r\n]/g, "");
+
     const lineIndex = envLines.findIndex((line) => line.startsWith(`${key}=`));
 
     if (lineIndex >= 0) {
-      envLines[lineIndex] = `${key}=${value}`;
+      envLines[lineIndex] = `${key}=${sanitized}`;
     } else {
-      envLines.push(`${key}=${value}`);
+      envLines.push(`${key}=${sanitized}`);
     }
   }
 

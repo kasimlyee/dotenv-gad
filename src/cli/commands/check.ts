@@ -2,7 +2,7 @@ import { Command } from "commander";
 import chalk from "chalk";
 import ora from "ora";
 import {validateEnv} from "../../index.js"
-import { AggregateError } from "../../errors.js";
+import { EnvAggregateError } from "../../errors.js";
 import { loadSchema } from "./utils.js";
 
 export default function (program: Command) {
@@ -27,7 +27,7 @@ export default function (program: Command) {
         );
       } catch (error) {
         spinner.stop();
-        if (error instanceof AggregateError) {
+        if (error instanceof EnvAggregateError) {
           console.error(chalk.red("\nEnvironment validation failed:"));
           error.errors.forEach((e) => {
             console.log(`  ${chalk.yellow(e.key)}: ${e.message}`);

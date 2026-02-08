@@ -26,6 +26,9 @@
 import { resolve } from "node:path";
 import { existsSync, writeFileSync, realpathSync } from "node:fs";
 import type {Plugin, ViteDevServer, HmrContext, ResolvedConfig } from "vite"
+import type { SchemaDefinition } from "./schema.js";
+import { loadEnv } from "./utils.js";
+import { loadSchema } from "./cli/commands/utils.js";
 
 const MODULE_ID = 'virtual:dotenv-gad';
 const RESOLVED_MODULE_ID = '\0' + MODULE_ID;
@@ -152,17 +155,19 @@ function generateDtsContent(filteredKeys: string[], schemaPath: string): string 
 
 /**
  * Filters the given validated environment variables for the browser.
- * Only variables that start with `VITE_` or are listed in `publicKeys` are included.
- * This is used to prevent sensitive environment variables from being exposed to the browser.
+ * Only variables that start with `VITE_` or are listed in `publicKeys` are included,
+ * and variables marked `sensitive` in the schema are always excluded.
  * @param validatedEnv - The validated environment variables.
  * @param publicKeys - An array of environment variable names to whitelist for the browser.
- * @returns A new object containing only the whitelisted environment variables.
+ * @param schema - The schema definition used to check the `sensitive` flag.
+ * @returns A new object containing only the safe, whitelisted environment variables.
  */
-function filterForBrowser(validatedEnv: Record<string, unknown>, publicKeys: string[]): Record<string, unknown>{
+function filterForBrowser(validatedEnv: Record<string, unknown>, publicKeys: string[], schema: SchemaDefinition): Record<string, unknown>{
     const allowed = new Set(publicKeys);
     const out: Record<string, unknown> = {};
 
     for(const [key, value] of Object.entries(validatedEnv)){
+        if(schema[key]?.sensitive) continue;
         if(key.startsWith('VITE_') || allowed.has(key)){
             out[key] = value;
         }
@@ -173,14 +178,12 @@ function filterForBrowser(validatedEnv: Record<string, unknown>, publicKeys: str
 
 interface ValidationResult{
     fullEnv: Record<string, unknown>;
-    schema: Record<string, unknown>;
+    schema: SchemaDefinition;
 }
 
 async function runValidation(schemaPath: string): Promise<ValidationResult>{
-    const {loadEnv, loadSchema} = await import('dotenv-gad');
-
-    const schema = await loadSchema(schemaPath)
-    const fullEnv = loadEnv(schema)
+    const schema = await loadSchema(schemaPath);
+    const fullEnv = loadEnv(schema);
 
     return {
         fullEnv: fullEnv,
@@ -251,7 +254,7 @@ export default function dotenvGadPlugin(options: DotenvGadOptions = {}): Plugin{
     async function validateAndUpdate(logger: {info: (...a: any[]) =>void; warn:(...a: any[]) =>void}){
         const result = await runValidation(schemaAbsPath);
 
-        currentFilteredEnv = filterForBrowser(result.fullEnv, publicKeys);
+        currentFilteredEnv = filterForBrowser(result.fullEnv, publicKeys, result.schema);
         currentSchema = result.schema;
 
         if(generatedTypes){
