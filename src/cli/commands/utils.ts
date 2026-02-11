@@ -1,75 +1,10 @@
-import { readFileSync, writeFileSync, unlinkSync, existsSync } from "fs";
-import { dirname, join, resolve } from "path";
-import { fileURLToPath, pathToFileURL } from "url";
-import { randomBytes } from "crypto";
-import { transformSync } from "esbuild";
+import { readFileSync, writeFileSync } from "fs";
 import { SchemaDefinition } from "../../schema.js";
 import Chalk from "chalk";
 import inquirer from "inquirer";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-
-/**
- * Loads a schema from a file.
- * @param schemaPath Path to the schema file.
- * @returns The loaded schema.
- * @throws If the schema file is malformed or cannot be loaded.
- */
-export async function loadSchema(
-  schemaPath: string
-): Promise<SchemaDefinition> {
-
-  const absPath = resolve(schemaPath);
-
-  const importModule = async(filePath: string) => {
-    const fileUrl = pathToFileURL(filePath).href;
-
-    const imported = await import(`${fileUrl}?t=${Date.now()}`);
-
-    const schema = imported.default || imported.schema || imported;
-
-    if(!schema || typeof schema !== "object"){
-      throw new Error(`Schema not found. Ensure you 'export default' or export const schema' in your file.`)
-    }
-    
-    return schema
-  }
-  const loadTsModule = async (
-    tsFilePath: string
-  ): Promise<SchemaDefinition> => {
-    const tempFile = join(__dirname, `../../temp-schema-${randomBytes(8).toString("hex")}.mjs`);
-    try {
-      const tsCode = readFileSync(tsFilePath, "utf-8");
-      const { code } = transformSync(tsCode, {
-        format: "esm",
-        loader: "ts",
-        target: "esnext",
-      });
-      writeFileSync(tempFile, code);
-      return await importModule(tempFile);
-    } finally {
-      if(existsSync(tempFile)){
-        unlinkSync(tempFile);
-      }
-      
-    }
-  };
-
-  try {
-    if (absPath.endsWith(".ts")) {
-      return await loadTsModule(absPath);
-    } else if (absPath.endsWith(".js")) {
-      return await importModule(absPath);
-    } else if (absPath.endsWith(".json")) {
-      return JSON.parse(readFileSync(absPath, "utf-8"));
-    }
-    throw new Error(`Unsupported schema format. Use .ts, .js or .json`);
-  } catch (error) {
-    throw new Error(
-      `Failed to load schema from ${schemaPath}: ${(error as Error).message}`
-    );
-  }
-}
+// Re-export from the standalone schema loader (no CLI-only deps)
+export { loadSchema } from "../../schema-loader.js";
 
 /**
  * Applies fixes to the given environment file by prompting the user to input

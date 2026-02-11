@@ -34,7 +34,7 @@ Notes
 
 Try it online
 
-- StackBlitz: https://stackblitz.com/github/kasimlyee/dotenv-gad/tree/opt/quick-refractor/examples/express
+- StackBlitz: https://stackblitz.com/github/kasimlyee/dotenv-gad/tree/main/examples/express
 - Run locally:
 
 ```bash
