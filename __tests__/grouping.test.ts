@@ -1,4 +1,4 @@
-import { defineSchema, loadEnv, EnvValidator, AggregateError } from "../src";
+import { defineSchema, EnvValidator, EnvAggregateError } from "../src/index.js";
 
 describe("grouped env variables (envPrefix)", () => {
   test("maps prefixed envs into an object", () => {
@@ -19,8 +19,6 @@ describe("grouped env variables (envPrefix)", () => {
       DATABASE_PWD: "supersecret",
     };
 
-    const result = loadEnv(schema, { strict: false });
-    // loadEnv reads from .env file, but in tests we directly use EnvValidator
     const v = new EnvValidator(schema);
     const validated = v.validate(env);
 
@@ -85,11 +83,8 @@ describe("grouped env variables (envPrefix)", () => {
       v.validate({ DATABASE_DB_NAME: "not-a-number" });
       throw new Error("should have thrown");
     } catch (err: any) {
-      const agg = err as AggregateError;
+      const agg = err as EnvAggregateError;
       const e = agg.errors.find((x: any) => x.key === "DATABASE");
-      // The error.value contains the top-level env value (we show raw when includeRaw),
-      // but since grouped values exist, we recorded Object keys as context when strict checks happen,
-      // in this test we expect the error to be present and include the value or keys
       expect(e).toBeDefined();
     }
   });

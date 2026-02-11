@@ -2,6 +2,7 @@
   "compilerOptions": {
     "target": "es2022",
     "module": "nodenext",
+    "rootDir": "./src",
     "moduleResolution": "nodenext",
     "declaration": true,
     "outDir": "./dist",
@@ -10,10 +11,8 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
-    "skipLibCheck": true,
-    "noEmit": true,
-    "types": ["vitest/globals"]
+    "skipLibCheck": true
   },
-  "include": ["src/**/*", "__tests__/**/*"],
+  "include": ["src/**/*"],
   "exclude": ["node_modules"]
 }

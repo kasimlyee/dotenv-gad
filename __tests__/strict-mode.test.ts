@@ -1,4 +1,4 @@
-import { AggregateError, defineSchema, EnvValidator } from "../src";
+import { EnvAggregateError, defineSchema, EnvValidator } from "../src/index.js";
 
 describe("Strict Mode Validation", () => {
   const schema = defineSchema({
@@ -6,17 +6,17 @@ describe("Strict Mode Validation", () => {
   });
 
   test("rejects extra environment variables", () => {
-    process.env = { API_KEY: "123", EXTRA_VAR: "x" };
     const validator = new EnvValidator(schema, { strict: true });
-    expect(() => validator.validate(process.env)).toThrow(
-      "Environment validation failed: EXTRA_VAR"
-    );
+    expect(() =>
+      validator.validate({ API_KEY: "123", EXTRA_VAR: "x" }),
+    ).toThrow("Environment validation failed: EXTRA_VAR");
   });
 
   test("allows extra variables in non-strict mode", () => {
-    process.env = { API_KEY: "123", EXTRA_VAR: "x" };
     const validator = new EnvValidator(schema);
-    expect(() => validator.validate(process.env)).not.toThrow();
+    expect(() =>
+      validator.validate({ API_KEY: "123", EXTRA_VAR: "x" }),
+    ).not.toThrow();
   });
 });
 
@@ -31,9 +31,10 @@ describe("Error Reporting", () => {
 
   test("includes detailed error information", () => {
     try {
-      process.env = { DB_PORT: "99999" };
-      new EnvValidator(schema).validate(process.env);
-    } catch (error: AggregateError | any) {
+      new EnvValidator(schema).validate({ DB_PORT: "99999" });
+      throw new Error("should have thrown");
+    } catch (error: any) {
+      expect(error).toBeInstanceOf(EnvAggregateError);
       expect(error.errors[0]).toMatchObject({
         key: "DB_PORT",
         message: "Must be between 1 and 65535",
