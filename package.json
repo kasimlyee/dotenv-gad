@@ -5,7 +5,7 @@
   "types": "dist/types/index.d.ts",
   "type": "module",
   "bin": {
-    "dotenv-guard": "./dist/cli/index.js"
+    "dotenv-gad": "./dist/cli/index.js"
   },
   "scripts": {
     "build": "tsc",
@@ -71,15 +71,9 @@
   "homepage": "https://github.com/kasimlyee/dotenv-gad#readme",
   "devDependencies": {
     "@eslint/js": "^9.17.0",
-    "@types/chalk": "^0.4.31",
-    "@types/commander": "^2.12.0",
-    "@types/dotenv": "^6.1.1",
     "@types/eslint__js": "^8.42.3",
-    "@types/figlet": "^1.7.0",
-    "@types/inquirer": "^9.0.8",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.0.3",
-    "@types/ora": "^3.1.0",
     "cross-env": "^7.0.3",
     "cross-env-shell": "^7.0.3",
     "eslint": "^9.17.0",
@@ -89,19 +83,22 @@
     "jest-environment-jsdom": "^30.0.2",
     "prettier": "^3.4.2",
     "ts-jest": "^29.4.0",
+    "typescript": "^5.7.0",
     "typescript-eslint": "^8.19.1",
-     "vite": "^6.0.0"
+    "vite": "^6.0.0"
   },
   "peerDependenciesMeta": {
     "vite": {
       "optional": true
     }
   },
+  "optionalDependencies": {
+    "esbuild": "^0.27.2"
+  },
   "dependencies": {
     "chalk": "^5.6.2",
     "commander": "^14.0.2",
     "dotenv": "^17.2.3",
-    "esbuild": "^0.27.2",
     "figlet": "^1.10.0",
     "inquirer": "^13.2.1",
     "ora": "^9.1.0"

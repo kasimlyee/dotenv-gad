@@ -1,380 +1,457 @@
 /**
  * Vite-dotenv-gad
- * 
+ *
  * Runs dotenv-gad validation exclusively in Node.js (inside Vite hooks),
  * then exposes the filtered, validated env through a virtual module.
- * 
+ *
  * Usage:
  *      import dotenvGad from 'dotenv-gad/vite';
- * 
+ *
  *      export default defineConfig({
- *          dotenvGad({
- *              schemaPath: './env.schema.ts', // path to your defineSchema file (default: './env.schema')
- *              publicKeys: ['MY_PUBLIC_KEY] // non-VITE_ keys to whitelist for the browser
- *          })
- *      }) 
- * 
+ *          plugins: [
+ *              dotenvGad({
+ *                  schemaPath: './env.schema.ts',
+ *                  publicKeys: ['MY_PUBLIC_KEY'],
+ *              })
+ *          ]
+ *      })
+ *
  * Inside app:
  *      import { env } from 'dotenv-gad/client';
  *      console.log(env.VITE_API_URL);
- * 
+ *
  */
 
-
-
-
-import { resolve } from "node:path";
-import { existsSync, writeFileSync, realpathSync } from "node:fs";
-import type {Plugin, ViteDevServer, HmrContext, ResolvedConfig } from "vite"
+import { resolve, relative, dirname } from "node:path";
+import { existsSync, realpathSync } from "node:fs";
+import { writeFile } from "node:fs/promises";
+import type { Plugin, ViteDevServer, HmrContext, ResolvedConfig } from "vite";
 import type { SchemaDefinition } from "./schema.js";
-import { loadEnv } from "./utils.js";
+import { EnvValidator } from "./validator.js";
 import { loadSchema } from "./cli/commands/utils.js";
 
-const MODULE_ID = 'virtual:dotenv-gad';
-const RESOLVED_MODULE_ID = '\0' + MODULE_ID;
-const CLIENT_ALIAS = 'dotenv-gad/client';
+const MODULE_ID = "virtual:dotenv-gad";
+const RESOLVED_MODULE_ID = "\0" + MODULE_ID;
+const CLIENT_ALIAS = "dotenv-gad/client";
 
-export interface DotenvGadOptions{
-
-     /**
+export interface DotenvGadOptions {
+  /**
    * Path (relative to project root) to the file that exports a
    * `defineSchema(...)` default export.
    *
-   * Supports .ts, .js, .mjs, .cjs, and .json. 
+   * Supports .ts, .js, .mjs, .cjs, and .json.
    *
    * @default './env.schema'
    */
-    schemaPath?: string;
+  schemaPath?: string;
 
-    /**
+  /**
    * Extra environment-variable keys (without the VITE_ prefix) that
    * should be forwarded to the browser bundle.  Everything else is
    * stripped at build time.
    *
    * @default []
    */
-    publicKeys?: string[];
+  publicKeys?: string[];
 
-    /**
+  /**
    * Absolute or relative glob(s) for additional .env files the plugin
    * should watch.  The plugin already watches `.env` and `.env.<mode>`
    * in the project root automatically.
    *
    * @default []
    */
-    envFiles?: string[];
+  envFiles?: string[];
 
-    /**
+  /**
    * When `true` the plugin will write a `dotenv-gad.d.ts` file in the
    * project root after every successful validation, giving you full
    * IntelliSense on `import { env } from 'dotenv-gad/client'`.
    *
    * @default true
    */
-    generatedTypes?: boolean;
+  generatedTypes?: boolean;
 
-    /**
+  /**
    * Path (relative to project root) where the generated `.d.ts` file
    * will be written.
    *
    * @default './dotenv-gad.d.ts'
    */
-    typesOutput?: string;
+  typesOutput?: string;
 }
 
+function resolveSchemaPath(root: string, schemaPath: string): string {
+  const abs = resolve(root, schemaPath);
 
+  if (existsSync(abs)) return abs;
 
-function resolveSchmaPath(root: string, schemaPath: string): string {
-    const abs = resolve(root, schemaPath);
+  const suffixes = [".ts", ".js", ".mjs", ".cjs", ".json"];
+  for (const suffix of suffixes) {
+    const candidate = abs + suffix;
+    if (existsSync(candidate)) return candidate;
+  }
 
-    if(existsSync(abs)) return abs;
-
-    const suffixes = ['.ts', '.js', '.mjs', '.cjs','.json'];
-    for(const suffix of suffixes){
-        const candidate = abs  + suffix;
-        if(existsSync(candidate)) return candidate;
-    }
-
-    throw new Error(`[dotenv-gad/vite]  Could not find schema file starting from "${abs}".\n
-        Make sure your schema file exists and the path is correct.`)
+  throw new Error(
+    `[dotenv-gad/vite] Could not find schema file starting from "${abs}".\n` +
+      `Make sure your schema file exists and the path is correct.`
+  );
 }
-
 
 /**
- * Generates a DTS declaration file for the validated environment
- * variables.
+ * Generates a DTS declaration file for the validated environment variables.
  *
- * The file contains two module declarations: one for the virtual
- * module and one for the client module. The virtual module
- * declaration is used to expose the validated environment
- * variables to the browser, while the client module declaration is
- * used to expose the same variables to the Node.js environment.
- *
- * The type of the environment variables is inferred from the schema
- * definition.
- *
- * @param filteredKeys - An array of environment variable names
- * that are safe for the browser (VITE_* + publicKeys whitelist)
- * @param schemaPath - The path to the schema definition file
- * @returns A string containing the DTS content to be written to
- * a file.
+ * @param filteredKeys - Environment variable names safe for the browser
+ * @param schemaAbsPath - Absolute path to the schema definition file
+ * @param dtsAbsPath - Absolute path where the .d.ts will be written
+ * @returns DTS content string
  */
-function generateDtsContent(filteredKeys: string[], schemaPath: string): string {
-    
-    const importPath = schemaPath.replace(/\\/g,'/').replace(/\.(ts|js|json)$/,'');
+function generateDtsContent(
+  filteredKeys: string[],
+  schemaAbsPath: string,
+  dtsAbsPath: string
+): string {
+  // Convert to a relative import path from the DTS output location
+  let importPath = relative(dirname(dtsAbsPath), schemaAbsPath)
+    .replace(/\\/g, "/")
+    .replace(/\.(ts|js|mjs|cjs|json)$/, "");
 
-    const pickedKeys = filteredKeys.map((key) => `'${key}'`).join(' | ');
+  if (!importPath.startsWith(".")) {
+    importPath = "./" + importPath;
+  }
 
+  const pickedKeys = filteredKeys.map((key) => `'${key}'`).join(" | ");
 
-   return [
-    '// ──────────────────────────────────────────────────────────────',
-    '// This file is auto-generated by dotenv-gad.',
-    '// Do NOT edit manually — it will be overwritten on next build/dev.',
-    '// ──────────────────────────────────────────────────────────────',
-    '',
+  return [
+    "// ──────────────────────────────────────────────────────────────",
+    "// This file is auto-generated by dotenv-gad.",
+    "// Do NOT edit manually — it will be overwritten on next build/dev.",
+    "// ──────────────────────────────────────────────────────────────",
+    "",
     `import type { InferEnv } from 'dotenv-gad';`,
     `import 'dotenv-gad/client'`,
     `import schema from '${importPath}';`,
-    '',
+    "",
     'declare module "dotenv-gad/client" {',
-    '  // Extract the full typed env from the schema, then Pick only the',
-    '  // keys that are safe for the browser (VITE_* + publicKeys whitelist)',
     `  export type DotenvGadEnv = Pick<InferEnv<typeof schema>, ${pickedKeys}>;`,
-    '}',
-    '',
-    '',
+    "}",
+    "",
     'declare module "virtual:dotenv-gad" {',
     `  import { DotenvGadEnv } from 'dotenv-gad/client';`,
-    '  export const env: DotenvGadEnv;',
-    '  export default env;',
-    '}',
-    '',
-    '',
-  ].join('\n');
+    "  export const env: DotenvGadEnv;",
+    "  export default env;",
+    "}",
+    "",
+  ].join("\n");
 }
 
 /**
- * Filters the given validated environment variables for the browser.
- * Only variables that start with `VITE_` or are listed in `publicKeys` are included,
- * and variables marked `sensitive` in the schema are always excluded.
- * @param validatedEnv - The validated environment variables.
- * @param publicKeys - An array of environment variable names to whitelist for the browser.
- * @param schema - The schema definition used to check the `sensitive` flag.
- * @returns A new object containing only the safe, whitelisted environment variables.
+ * Filters validated environment variables for the browser bundle.
+ * Only `VITE_*` keys and explicitly whitelisted `publicKeys` are included.
+ * Keys marked `sensitive` in the schema are always excluded.
  */
-function filterForBrowser(validatedEnv: Record<string, unknown>, publicKeys: string[], schema: SchemaDefinition): Record<string, unknown>{
-    const allowed = new Set(publicKeys);
-    const out: Record<string, unknown> = {};
+function filterForBrowser(
+  validatedEnv: Record<string, unknown>,
+  publicKeys: string[],
+  schema: SchemaDefinition
+): Record<string, unknown> {
+  const allowed = new Set(publicKeys);
+  const out: Record<string, unknown> = {};
 
-    for(const [key, value] of Object.entries(validatedEnv)){
-        if(schema[key]?.sensitive) continue;
-        if(key.startsWith('VITE_') || allowed.has(key)){
-            out[key] = value;
-        }
+  for (const [key, value] of Object.entries(validatedEnv)) {
+    if (schema[key]?.sensitive) continue;
+    if (key.startsWith("VITE_") || allowed.has(key)) {
+      out[key] = value;
     }
+  }
 
-    return out
+  return out;
 }
-
-interface ValidationResult{
-    fullEnv: Record<string, unknown>;
-    schema: SchemaDefinition;
-}
-
-async function runValidation(schemaPath: string): Promise<ValidationResult>{
-    const schema = await loadSchema(schemaPath);
-    const fullEnv = loadEnv(schema);
-
-    return {
-        fullEnv: fullEnv,
-        schema: schema
-    }
-}
-
-function collectWatchedFiles(root: string, schemaPath: string, mode: string, extraEnvFiles: string[]): string[]{
-    const files: string[] = [schemaPath]
-
-    const dotenv = resolve(root, '.env');
-    if(existsSync(dotenv)) files.push(dotenv);
-
-    const dotenvMode = resolve(root, `.env.${mode}`);
-    if(existsSync(dotenvMode)) files.push(dotenvMode);
-
-    const dotenvLocal = resolve(root, '.env.local');
-    if(existsSync(dotenvLocal)) files.push(dotenvLocal);
-
-    for(const extra of extraEnvFiles){
-        const abs = resolve(root, extra);
-        if(existsSync(abs)) files.push(abs);
-    }
-
-    return files
-}
-
-    /**
-     * Vite plugin for dotenv-gad.
-     * 
-     * Validate your environment variables against a schema definition.
-     * 
-     * Options:
-     * - `schemaPath`: The path to your schema definition file.
-     * - `publicKeys`: An array of environment variable names to whitelist for the browser.
-     * - `envFiles`: An array of environment variable file names to include in the validation.
-     * - `generatedTypes`: A boolean indicating whether or not to generate a DTS declaration file for the validated environment variables.
-     * - `typesOutput`: The path to which to write the generated DTS declaration file.
-     * 
-     * @param options - An object containing the above options.
-     * @returns A vite plugin object.
-     */
-export default function dotenvGadPlugin(options: DotenvGadOptions = {}): Plugin{
-
-    const {
-        schemaPath = './env.schema.ts',
-        publicKeys = [],
-        envFiles = [],
-        generatedTypes = true,
-        typesOutput = './dotenv-gad.d.ts'
-    } = options;
-
-    let resolvedConfig!: ResolvedConfig;
-    let schemaAbsPath!: string;
-    let watchedFiles: string[]= [];
-
-    let currentFilteredEnv: Record<string, unknown> = {}
-    let currentSchema: Record<string, unknown> = {}
 
 /**
- * Validates the environment variables against the schema definition
- * and updates the current filtered environment variables and schema.
- * If `generatedTypes` is true, generates a DTS declaration file
- * for the validated environment variables.
- * @param logger - An object containing `info` and `warn` methods
- * to log information and warnings, respectively.
+ * Collects all .env files that should trigger re-validation on change.
+ * Mirrors Vite's own env file precedence:
+ *   .env  <  .env.local  <  .env.[mode]  <  .env.[mode].local
  */
-    async function validateAndUpdate(logger: {info: (...a: any[]) =>void; warn:(...a: any[]) =>void}){
-        const result = await runValidation(schemaAbsPath);
+function collectWatchedFiles(
+  root: string,
+  schemaPath: string,
+  mode: string,
+  extraEnvFiles: string[]
+): string[] {
+  const files: string[] = [schemaPath];
 
-        currentFilteredEnv = filterForBrowser(result.fullEnv, publicKeys, result.schema);
-        currentSchema = result.schema;
+  const candidates = [
+    ".env",
+    ".env.local",
+    `.env.${mode}`,
+    `.env.${mode}.local`,
+  ];
 
-        if(generatedTypes){
-            const dtsPath = resolve(resolvedConfig.root, typesOutput);
-            const content = generateDtsContent(Object.keys(currentFilteredEnv), schemaAbsPath);
-            writeFileSync(dtsPath, content, 'utf-8');
-            logger.info(`[dotenv-gad]   ✓ Generated types → ${dtsPath}`);
-        }
+  for (const name of candidates) {
+    const abs = resolve(root, name);
+    if (existsSync(abs)) files.push(abs);
+  }
 
+  for (const extra of extraEnvFiles) {
+    const abs = resolve(root, extra);
+    if (existsSync(abs)) files.push(abs);
+  }
+
+  return files;
+}
+
+/**
+ * Vite plugin for dotenv-gad.
+ *
+ * Validates environment variables against a schema definition, then
+ * exposes the filtered result to the browser via a virtual module.
+ */
+export default function dotenvGadPlugin(
+  options: DotenvGadOptions = {}
+): Plugin {
+  const {
+    schemaPath = "./env.schema.ts",
+    publicKeys = [],
+    envFiles = [],
+    generatedTypes = true,
+    typesOutput = "./dotenv-gad.d.ts",
+  } = options;
+
+  let resolvedConfig!: ResolvedConfig;
+  let schemaAbsPath!: string;
+  let watchedFiles: string[] = [];
+  let currentMode = "development";
+
+  // Cached schema — only reloaded when the schema file itself changes
+  let cachedSchema: SchemaDefinition | null = null;
+  // Lazily resolved real paths for watched files (avoids realpathSync on every HMR)
+  let resolvedWatchedFiles: Set<string> | null = null;
+  // Real path of the schema file for HMR cache invalidation
+  let schemaRealPath: string | null = null;
+
+  let currentFilteredEnv: Record<string, unknown> = {};
+  let validationRan = false;
+  let validationFailed = false;
+  let lastValidationError = "";
+
+  async function getSchema(): Promise<SchemaDefinition> {
+    if (!cachedSchema) {
+      cachedSchema = await loadSchema(schemaAbsPath);
     }
+    return cachedSchema;
+  }
 
-    return {
-        name: 'vite-dotenv-gad',
-        enforce: 'pre',
+  /**
+   * Core validation loop:
+   *  Load the schema (cached unless schema file changed)
+   *  Load env vars using Vite's own loadEnv (respects envDir, mode, precedence)
+   *  Validate with EnvValidator
+   *  Filter for browser safety
+   *  Optionally write .d.ts
+   */
+  async function validateAndUpdate(logger: {
+    info: (...a: any[]) => void;
+    warn: (...a: any[]) => void;
+  }) {
+    const schema = await getSchema();
 
-        config(config, {mode}){
-            const root = config.root ?? process.cwd();
-            schemaAbsPath = resolveSchmaPath(root, schemaPath);
-            watchedFiles = collectWatchedFiles(root, schemaAbsPath, mode, envFiles);
+    // Use Vite's loadEnv to respect envDir, mode, and .env file precedence.
+    // Passing '' as the prefix loads ALL env vars, not just VITE_* ones.
+    const { loadEnv: viteLoadEnv } = await import("vite");
+    const envDir = resolvedConfig.envDir || resolvedConfig.root;
+    const env = viteLoadEnv(currentMode, envDir, "");
 
-            return undefined;
-        },
+    const validator = new EnvValidator(schema);
+    const fullEnv = validator.validate(env);
 
-        configResolved(config){
-            resolvedConfig = config;
-        },
+    currentFilteredEnv = filterForBrowser(
+      fullEnv as Record<string, unknown>,
+      publicKeys,
+      schema
+    );
+    validationRan = true;
+    validationFailed = false;
 
-        async configureServer(server: ViteDevServer){
-            try{
-                await validateAndUpdate(server.config.logger);
-                 server.config.logger.info('[dotenv-gad]    ✓ Environment validated successfully.');
-            }catch(err: unknown){
-                 server.config.logger.error(
-          `\n${'='.repeat(70)}\n` +
-          `[dotenv-gad]     ✗ VALIDATION FAILED - Fix your .env to continue\n` +
-          `${'='.repeat(70)}\n` +
-          `${String(err)}\n` +
-          `${'='.repeat(70)}\n`
+    if (generatedTypes) {
+      const dtsPath = resolve(resolvedConfig.root, typesOutput);
+      const content = generateDtsContent(
+        Object.keys(currentFilteredEnv),
+        schemaAbsPath,
+        dtsPath
+      );
+      await writeFile(dtsPath, content, "utf-8");
+      logger.info(`[dotenv-gad]   Generated types -> ${dtsPath}`);
+    }
+  }
+
+  return {
+    name: "vite-dotenv-gad",
+    enforce: "pre",
+
+    config(config, { mode }) {
+      const root = config.root ?? process.cwd();
+      currentMode = mode;
+      schemaAbsPath = resolveSchemaPath(root, schemaPath);
+      watchedFiles = collectWatchedFiles(root, schemaAbsPath, mode, envFiles);
+
+      return undefined;
+    },
+
+    configResolved(config) {
+      resolvedConfig = config;
+    },
+
+    async configureServer(server: ViteDevServer) {
+      try {
+        await validateAndUpdate(server.config.logger);
+        server.config.logger.info(
+          "[dotenv-gad]    Environment validated successfully."
         );
+      } catch (err: unknown) {
+        validationFailed = true;
+        lastValidationError = String(err);
+        server.config.logger.error(
+          `\n${"=".repeat(70)}\n` +
+            `[dotenv-gad]     VALIDATION FAILED - Fix your .env to continue\n` +
+            `${"=".repeat(70)}\n` +
+            `${lastValidationError}\n` +
+            `${"=".repeat(70)}\n`
+        );
+      }
 
-            }
+      server.watcher.add(watchedFiles);
+    },
 
-            server.watcher.add(watchedFiles);
-        },
+    async buildStart() {
+      if (resolvedConfig.command === "build") {
+        try {
+          await validateAndUpdate(
+            this.environment?.logger ?? resolvedConfig.logger
+          );
+          resolvedConfig.logger.info(
+            "[dotenv-gad]   Environment validated successfully."
+          );
+        } catch (err: unknown) {
+          this.error(
+            `[dotenv-gad]    Validation failed — aborting build.\n\n${String(err)}`
+          );
+        }
+      }
+    },
 
-        async buildStart(){
-            if(resolvedConfig.command === 'build'){
-                try{
-                    await validateAndUpdate(this.environment?.logger ?? resolvedConfig.logger);
-                     resolvedConfig.logger.info('[dotenv-gad]   ✓ Environment validated successfully.');
-                }catch(err:unknown){
-                    this.error(`[dotenv-gad]    ✗ Validation failed — aborting build.\n\n${String(err)}`);
-                }
-            }
-        },
+    resolveId(id: string, _source, options) {
+      if (id === MODULE_ID || id === CLIENT_ALIAS) {
+        // Don't intercept in SSR — server code needs the full env, not
+        // the browser-filtered subset. Let it fall through to the real
+        // client.ts stub or the user's own server-side env setup.
+        if ((options as { ssr?: boolean })?.ssr) return undefined;
+        return RESOLVED_MODULE_ID;
+      }
+      return undefined;
+    },
 
-        resolveId(id: string){
-            if(id === MODULE_ID || id === CLIENT_ALIAS){
-                return RESOLVED_MODULE_ID;
-            }
-            return undefined;
-        },
+    async load(id: string) {
+      if (id !== RESOLVED_MODULE_ID) return undefined;
 
-        async load(id: string){
-            if(id !== RESOLVED_MODULE_ID) return undefined;
+      // Only re-validate if no prior hook has populated the env yet
+      if (!validationRan) {
+        try {
+          await validateAndUpdate(resolvedConfig.logger);
+        } catch (err: unknown) {
+          validationFailed = true;
+          lastValidationError = String(err);
+        }
+      }
 
-            if(Object.keys(currentFilteredEnv).length === 0){
-                await validateAndUpdate(resolvedConfig.logger); //it it fails we thro so the build stops
-            }
+      // If validation failed, return a module that throws at import time
+      // so the developer gets a clear error in the browser console rather
+      // than silently undefined values from an empty object.
+      if (validationFailed) {
+        const escaped = lastValidationError
+          .replace(/\\/g, "\\\\")
+          .replace(/`/g, "\\`")
+          .replace(/\$/g, "\\$");
+        return [
+          `// dotenv-gad: validation failed — throwing so the error is visible`,
+          `throw new Error(\`[dotenv-gad] Environment validation failed.\\n\\n${escaped}\\n\\nFix your .env file, then save to trigger re-validation.\`);`,
+        ].join("\n");
+      }
 
-            const json = JSON.stringify(currentFilteredEnv, null, 2);
+      const json = JSON.stringify(currentFilteredEnv, null, 2);
 
-            return [
+      return [
         `// Auto-generated by dotenv-gad`,
         `// Only VITE_* keys (and explicitly whitelisted publicKeys) are included.`,
         `export const env = ${json};`,
         `export default env;`,
-      ].join('\n');
-        },
+      ].join("\n");
+    },
 
-        async handleHotUpdate(context: HmrContext){
-            const {file, server} = context;
+    async handleHotUpdate(context: HmrContext) {
+      const { file, server } = context;
 
-            let normalised: string;
-
-            try{
-                normalised = realpathSync(file);
-            }catch{
-                normalised =  file;
-            }
-
-            const isWatched = watchedFiles.some((w) =>{
-                try{
-                    return realpathSync(w) ===normalised;
-                }catch{
-                    return w === normalised
-                }
-            });
-            if (!isWatched) return; //vite will handle the update normally.
-
-            server.config.logger.info(`[dotenv-gad]     detected change in ${file} — re-validating…`);
-
-            try{
-                await validateAndUpdate(server.config.logger);
-               server.config.logger.info('[dotenv-gad]     ✓ Re-validation passed.');
-            }catch(err:unknown){
-                //In Dev Mode: Just log the failure but not to kill the server.
-                server.config.logger.error(`\n[dotenv-gad]  ✗ Re-validation failed:\n${String(err)}\n`);
-            }
-
-            // So we invalidate the virtual module in Vite's module graph such that
-            // any component importing it receives an updated payload via HMR.
-            const virutalModule = server.moduleGraph.getModuleById(RESOLVED_MODULE_ID);
-            if(virutalModule){
-                server.moduleGraph.invalidateModule(virutalModule);
-
-                return [virutalModule]
-            }
-
-            return [];
+      // Lazily resolve and cache watched file real paths once
+      if (!resolvedWatchedFiles) {
+        resolvedWatchedFiles = new Set<string>();
+        for (const w of watchedFiles) {
+          try {
+            resolvedWatchedFiles.add(realpathSync(w));
+          } catch {
+            resolvedWatchedFiles.add(w);
+          }
         }
-    }
+      }
+
+      // Resolve schema real path once for cache-invalidation checks
+      if (!schemaRealPath) {
+        try {
+          schemaRealPath = realpathSync(schemaAbsPath);
+        } catch {
+          schemaRealPath = schemaAbsPath;
+        }
+      }
+
+      let normalised: string;
+      try {
+        normalised = realpathSync(file);
+      } catch {
+        normalised = file;
+      }
+
+      if (!resolvedWatchedFiles.has(normalised)) return;
+
+      // If the schema file itself changed, invalidate the cached schema
+      if (normalised === schemaRealPath) {
+        cachedSchema = null;
+      }
+
+      server.config.logger.info(
+        `[dotenv-gad]     detected change in ${file} — re-validating...`
+      );
+
+      try {
+        await validateAndUpdate(server.config.logger);
+        server.config.logger.info(
+          "[dotenv-gad]     Re-validation passed."
+        );
+      } catch (err: unknown) {
+        validationFailed = true;
+        lastValidationError = String(err);
+        server.config.logger.error(
+          `\n[dotenv-gad]  Re-validation failed:\n${lastValidationError}\n`
+        );
+      }
+
+      // Invalidate the virtual module so importing components get the update via HMR
+      const virtualModule =
+        server.moduleGraph.getModuleById(RESOLVED_MODULE_ID);
+      if (virtualModule) {
+        server.moduleGraph.invalidateModule(virtualModule);
+        return [virtualModule];
+      }
+
+      return [];
+    },
+  };
 }
