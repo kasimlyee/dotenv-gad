@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   test:
@@ -29,6 +29,12 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Type-check
+        run: npx tsc -p tsconfig.build.json --noEmit
+
+      - name: Build
+        run: npm run build
 
       - name: Run tests
         run: npm test
