@@ -1,4 +1,4 @@
-import { defineSchema, EnvValidator, AggregateError } from "../src";
+import { defineSchema, EnvValidator, EnvAggregateError } from "../src/index.js";
 
 describe("sensitive and raw error reporting", () => {
   test("default: sensitive value is redacted", () => {
@@ -11,8 +11,8 @@ describe("sensitive and raw error reporting", () => {
       v.validate({ SECRET_KEY: "not-a-number" });
       throw new Error("should have thrown");
     } catch (err: any) {
-      expect(err).toBeInstanceOf(AggregateError);
-      const agg = err as AggregateError;
+      expect(err).toBeInstanceOf(EnvAggregateError);
+      const agg = err as EnvAggregateError;
       const secretError = agg.errors.find((e: any) => e.key === "SECRET_KEY");
       expect(secretError).toBeDefined();
       expect(secretError!.value).toBe("****");
@@ -27,8 +27,8 @@ describe("sensitive and raw error reporting", () => {
       v.validate({ NUM: "not-a-number" });
       throw new Error("should have thrown");
     } catch (err: any) {
-      expect(err).toBeInstanceOf(AggregateError);
-      const agg = err as AggregateError;
+      expect(err).toBeInstanceOf(EnvAggregateError);
+      const agg = err as EnvAggregateError;
       const numError = agg.errors.find((e: any) => e.key === "NUM");
       expect(numError).toBeDefined();
       expect(numError!.value).toBe("not-a-number");
@@ -45,17 +45,20 @@ describe("sensitive and raw error reporting", () => {
       v1.validate({ SECRET_KEY: "not-a-number" });
       throw new Error("should have thrown");
     } catch (err: any) {
-      const agg = err as AggregateError;
+      const agg = err as EnvAggregateError;
       const e = agg.errors.find((x: any) => x.key === "SECRET_KEY");
       expect(e!.value).toBe("****");
     }
 
-    const v2 = new EnvValidator(schema, { includeRaw: true, includeSensitive: true });
+    const v2 = new EnvValidator(schema, {
+      includeRaw: true,
+      includeSensitive: true,
+    });
     try {
       v2.validate({ SECRET_KEY: "not-a-number" });
       throw new Error("should have thrown");
     } catch (err: any) {
-      const agg = err as AggregateError;
+      const agg = err as EnvAggregateError;
       const e = agg.errors.find((x: any) => x.key === "SECRET_KEY");
       expect(e!.value).toBe("not-a-number");
     }

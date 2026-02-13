@@ -4,13 +4,19 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'docs/**'
+      - '.github/workflows/publish-docs.yml'
   workflow_dispatch:
 
+# Only allow one deployment at a time
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -20,7 +26,7 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install deps
+      - name: Install docs dependencies
         working-directory: docs
         run: npm ci
 
@@ -28,20 +34,24 @@ jobs:
         working-directory: docs
         run: npm run build
 
-      - name: Debug Git state
-        run: |
-          git --version
-          git config --list
-          git remote -v
-          git status --porcelain --branch
-
-      - name: Publish to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          publish_dir: ./docs/build
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_branch: gh-pages
-          allow_empty_commit: true
-          user_name: 'github-actions[bot]'
-          user_email: 'github-actions[bot]@users.noreply.github.com'
-          commit_message: 'docs: publish docs (gh-pages)'
+          path: docs/build
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

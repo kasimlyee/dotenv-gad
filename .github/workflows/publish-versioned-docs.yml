@@ -4,13 +4,14 @@ on:
   release:
     types: [published]
 
+# Only allow one deployment at a time
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
 jobs:
-  publish-versioned-docs:
+  build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    env:
-      NODE_OPTIONS: --experimental-vm-modules
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -22,16 +23,7 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Prepare version
-        run: |
-          echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_ENV
-          echo "DOCS_DIR=/v${GITHUB_REF_NAME#v}/" >> $GITHUB_ENV
-        shell: bash
-
-      - name: Install dependencies
+      - name: Install docs dependencies
         working-directory: docs
         run: npm ci
 
@@ -39,85 +31,24 @@ jobs:
         working-directory: docs
         run: npm run build
 
-      - name: Debug Git state
-        run: |
-          git --version
-          git config --list
-          git remote -v
-          git status --porcelain --branch
-
-      - name: Publish docs to gh-pages under versioned path
-        uses: peaceiris/actions-gh-pages@v3
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./build
-          publish_branch: gh-pages
-          destination_dir: v${{ env.VERSION }}
-          allow_empty_commit: true
-          user_name: 'github-actions[bot]'
-          user_email: 'github-actions[bot]@users.noreply.github.com'
-          commit_message: 'docs: publish version ${GITHUB_REF_NAME#v} (gh-pages)'
+          path: docs/build
 
-      - name: Update versions index on gh-pages (and ensure 'latest')
-        uses: actions/github-script@v6
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
-            const branch = 'gh-pages';
-            const path = '_versions.json';
-            let current;
-            try {
-              const res = await github.rest.repos.getContent({ owner, repo, path, ref: branch });
-              const buf = Buffer.from(res.data.content, 'base64').toString();
-              current = JSON.parse(buf);
-            } catch (e) {
-              current = [];
-            }
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
 
-            const versionName = `v${process.env.VERSION}`;
-            const versionEntry = { name: versionName, path: `/${versionName}/` };
+    permissions:
+      pages: write
+      id-token: write
 
-            // Ensure version entry is present (and at front)
-            current = current.filter((x) => x.name !== versionEntry.name);
-            current.unshift(versionEntry);
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
 
-            // Ensure 'latest' entry exists and is first (alias to /latest/)
-            const latestEntry = { name: 'latest', path: '/latest/' };
-            current = current.filter((x) => x.name !== latestEntry.name);
-            current.unshift(latestEntry);
-
-            const content = Buffer.from(JSON.stringify(current, null, 2)).toString('base64');
-            const updateParams = {
-              owner,
-              repo,
-              path,
-              message: `docs: update versions (add ${versionEntry.name} and latest)`,
-              content,
-              branch,
-            };
-
-            try {
-              const existing = await github.rest.repos.getContent({ owner, repo, path, ref: branch });
-              updateParams.sha = existing.data.sha;
-            } catch (e) {
-              // file does not exist; create it
-            }
-
-            await github.rest.repos.createOrUpdateFileContents(updateParams);
-            core.info(`Updated ${path} on ${branch}`);
-
-      - name: Publish docs to 'latest' alias
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./docs/build
-          publish_branch: gh-pages
-          destination_dir: latest
-          allow_empty_commit: true
-          user_name: 'github-actions[bot]'
-          user_email: 'github-actions[bot]@users.noreply.github.com'
-          commit_message: 'docs: publish latest alias (gh-pages)'
-
-
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

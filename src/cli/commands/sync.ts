@@ -7,7 +7,7 @@ import { SchemaRule } from "../../index.js";
 
 export default function (program: Command) {
   return new Command("sync")
-    .description("Genearte/update .env.example file")
+    .description("Generate/update .env.example file")
     .option("--output <file>", "Output file path", ".env.example")
     .action(async (options, command) => {
       const rootOpts = command.parent.opts();

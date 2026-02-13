@@ -11,7 +11,7 @@ export class EnvValidationError extends Error {
   }
 }
 
-export class AggregateError extends Error {
+export class EnvAggregateError extends Error {
   constructor(
     public errors: {
       key: string;
@@ -22,8 +22,8 @@ export class AggregateError extends Error {
     message: string
   ) {
     super(message);
-    this.name = "AggregateError";
-    Object.setPrototypeOf(this, AggregateError.prototype);
+    this.name = "EnvAggregateError";
+    Object.setPrototypeOf(this, EnvAggregateError.prototype);
   }
 
   toString() {
@@ -39,3 +39,6 @@ export class AggregateError extends Error {
     return `${this.message}:\n${errorList}`;
   }
 }
+
+/** @deprecated Use `EnvAggregateError` instead — avoids shadowing the built-in `AggregateError`. */
+export const AggregateError = EnvAggregateError;

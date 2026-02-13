@@ -14,7 +14,7 @@ export default function (program: Command) {
         md += `- **Type**: ${rule.type}\n`;
         if (rule.docs) md += `- **Description**: ${rule.docs}\n`;
         if (rule.default) {
-          md += `- **Default**: \'${rule.default}\'}\n`;
+          md += `- **Default**: \'${rule.default}\'\n`;
         }
         md += "\n";
       });

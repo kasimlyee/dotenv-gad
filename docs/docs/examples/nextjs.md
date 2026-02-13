@@ -23,7 +23,7 @@ Notes
 
 Try it online
 
-- StackBlitz: https://stackblitz.com/github/kasimlyee/dotenv-gad/tree/opt/quick-refractor/examples/nextjs
+- StackBlitz: https://stackblitz.com/github/kasimlyee/dotenv-gad/tree/main/examples/nextjs
 - Run locally:
 
 ```bash

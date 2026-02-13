@@ -23,5 +23,12 @@ import { SchemaDefinition } from "./schema.js";
 export function composeSchema(
   ...schemas: SchemaDefinition[]
 ): SchemaDefinition {
-  return Object.assign({}, ...schemas);
+  const result: SchemaDefinition = Object.create(null);
+  for (const schema of schemas) {
+    for (const key of Object.keys(schema)) {
+      if (key === "__proto__" || key === "constructor" || key === "prototype") continue;
+      result[key] = schema[key];
+    }
+  }
+  return result;
 }

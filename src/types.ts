@@ -16,7 +16,7 @@ T['type'] extends 'object' ? T['properties'] extends Record<string,SchemaRule> ?
 
 
 /**
- * A property is  optional if rrquired is explicitly false or
+ * A property is optional if required is explicitly false or
  * required is not set and no default is provided.
  */
 type IsOptional<T extends SchemaRule> = T['required'] extends true ? false : T['default'] extends undefined ? true : false;
