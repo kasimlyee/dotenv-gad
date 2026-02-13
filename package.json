@@ -1,6 +1,6 @@
 {
   "name": "dotenv-gad",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "main": "dist/index.js",
   "types": "dist/types/index.d.ts",
   "type": "module",
@@ -68,7 +68,7 @@
   "bugs": {
     "url": "https://github.com/kasimlyee/dotenv-gad/issues"
   },
-  "homepage": "https://github.com/kasimlyee/dotenv-gad#readme",
+  "homepage": "https://kasimlyee.github.io/dotenv-gad/",
   "devDependencies": {
     "@eslint/js": "^9.17.0",
     "@types/eslint__js": "^8.42.3",
