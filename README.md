@@ -88,6 +88,44 @@ npx dotenv-gad check
 npx dotenv-gad types
 ```
 
+## Vite Plugin
+
+The Vite plugin provides build-time environment variable validation with automatic client-safe filtering for browser-based applications.
+
+### Add to your `vite.config.ts`:
+
+```typescript
+import { defineConfig } from "vite";
+import dotenvGad from "dotenv-gad/vite";
+
+export default defineConfig({
+  plugins: [
+    dotenvGad({
+      schemaPath: "./env.schema.ts",
+      clientPrefix: "VITE_", // Default prefix for client-safe variables
+      publicKeys: [], // Additional non-prefixed keys to expose
+      generatedTypes: true, // Generate dotenv-gad.d.ts for IntelliSense
+    }),
+  ],
+});
+```
+
+### Use validated environment variables in your app:
+
+```typescript
+import { env } from "dotenv-gad/client";
+
+console.log(env.VITE_API_URL); // Full type safety & validation
+```
+
+### Key Features
+
+- **Build-time validation**: Environment checked every dev/build cycle
+- **Client-safe filtering**: Only `VITE_` prefixed variables (or custom `publicKeys`) exposed to browser
+- **Automatic TypeScript types**: Generated `dotenv-gad.d.ts` for full IntelliSense
+- **Sensitive protection**: Variables marked `sensitive: true` are excluded by default
+- **HMR support**: Hot reload on `.env` changes during development
+
 ## Features
 
 ### Core Validation
