@@ -151,7 +151,7 @@ function generateDtsContent(
     "}",
     "",
     'declare module "virtual:dotenv-gad" {',
-    '  import { DotenvGadEnv } from "dotenv-gad/client";',
+    '  type DotenvGadEnv = typeof import("dotenv-gad/client").env;',
     "  export const env: DotenvGadEnv;",
     "  export default env;",
     "}",
