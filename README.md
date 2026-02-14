@@ -2,7 +2,7 @@
 
 [![npm version](https://badge.fury.io/js/dotenv-gad.svg)](https://badge.fury.io/js/dotenv-gad)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Docs](https://img.shields.io/badge/docs-latest-blue?style=flat-square)](https://kasimlyee.github.io/dotenv-gad/latest/)
+[![Docs](https://img.shields.io/badge/docs-latest-blue?style=flat-square)](https://kasimlyee.github.io/dotenv-gad/)
 
 **dotenv-gad** is an environment variable validation tool that brings type safety and schema validation to your Node.js and JavaScript applications. It extends `dotenv` with features like:
 
@@ -57,7 +57,7 @@ console.log(`Server running on port ${env.PORT}`);
 
 Documentation
 
-[![Docs](https://img.shields.io/badge/docs-latest-blue?style=flat-square)](https://kasimlyee.github.io/dotenv-gad/latest/)
+[![Docs](https://img.shields.io/badge/docs-latest-blue?style=flat-square)](https://kasimlyee.github.io/dotenv-gad/)
 
 Full documentation is available via GitHub Pages (published from `docs/`).
 
