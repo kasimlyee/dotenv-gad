@@ -7,24 +7,14 @@ import TabItem from '@theme/TabItem';
 
 # Installation
 
-This guide explains how to install **dotenv-gad** and integrate it into your Node.js or TypeScript project.
-
-
+This guide explains how to install **dotenv-gad** in your Node.js or TypeScript project.
 
 ## Requirements
 
-Before installing, ensure your environment meets the following requirements:
-
 * **Node.js** ≥ 18
 * **npm**, **yarn**, or **pnpm**
-* A JavaScript or TypeScript project
-
-> `dotenv-gad` works with CommonJS and ES Modules.
-
-
 
 Install `dotenv-gad` using your preferred package manager:
-
 
 <Tabs groupId="package-manager">
   <TabItem value="npm" label="npm" default>
@@ -33,7 +23,7 @@ Install `dotenv-gad` using your preferred package manager:
     npm install dotenv-gad
     ```
 
-  
+
 </TabItem>
 
 <TabItem value="yarn" label="yarn">
@@ -42,7 +32,7 @@ Install `dotenv-gad` using your preferred package manager:
     yarn add dotenv-gad
     ```
 
-  
+
 </TabItem>
 
 <TabItem value="pnpm" label="pnpm">
@@ -51,7 +41,7 @@ Install `dotenv-gad` using your preferred package manager:
     pnpm add dotenv-gad
     ```
 
-  
+
 </TabItem>
 </Tabs>
 
@@ -65,6 +55,9 @@ npx dotenv-gad --help
 
 You should see the list of available CLI commands.
 
+## What's included
 
-
-
+- **`dotenv-gad`** — core library (`loadEnv`, `EnvValidator`, `defineSchema`, `composeSchema`)
+- **`dotenv-gad/vite`** — Vite plugin for build-time validation and client-safe env filtering
+- **`dotenv-gad/client`** — typed client entry point for Vite projects
+- **CLI** (`npx dotenv-gad`) — check, sync, types, init, fix, docs commands

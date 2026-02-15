@@ -29,6 +29,7 @@ app.listen(env.PORT, () => console.log(`Server running on ${env.PORT}`));
 ```
 
 Notes
+- `loadEnv` reads from both `process.env` and your `.env` file. On platforms like Vercel, Railway, or Docker where env vars are injected directly, it just works — no `.env` file needed.
 - Use `includeRaw` during local debugging if you want raw values to appear in errors: `loadEnv(schema, { includeRaw: true })`.
 - For production, keep `includeRaw` disabled to avoid leaking values in logs.
 

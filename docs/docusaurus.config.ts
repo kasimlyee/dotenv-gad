@@ -6,7 +6,7 @@ import type * as Preset from '@docusaurus/preset-classic';
 
 const config: Config = {
   title: 'dotenv-gad',
-  tagline: 'Environment variable validation and type safety for Node.js and modern JavaScript applications',
+  tagline: 'Type-safe environment variable validation for Node.js — works with .env files, Vercel, Docker, and any platform',
   favicon: 'img/favicon.ico',
 
   // Future flags, see https://docusaurus.io/docs/api/docusaurus-config#future

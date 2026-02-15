@@ -4,15 +4,16 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Docs](https://img.shields.io/badge/docs-latest-blue?style=flat-square)](https://kasimlyee.github.io/dotenv-gad/)
 
-**dotenv-gad** is an environment variable validation tool that brings type safety and schema validation to your Node.js and JavaScript applications. It extends `dotenv` with features like:
+**dotenv-gad** is an environment variable validation library that brings type safety, schema validation, and runtime checks to your Node.js and JavaScript applications. It works with any environment variable source — `.env` files, platform dashboards (Vercel, Railway, Docker), CI/CD pipelines, or `process.env` directly.
 
-- Type-safe environment variables
-- Schema validation
-- Schema composition
-- Automatic documentation generation
-- TypeScript support
-- CLI tooling
-- Secret management
+- Type-safe environment variables with full IntelliSense
+- Schema validation (string, number, boolean, url, email, ip, port, json, array, object)
+- Schema composition for modular configs
+- Automatic documentation and `.env.example` generation
+- First-class TypeScript support
+- CLI tooling (check, sync, types, init, fix, docs)
+- Sensitive value management and redaction
+- Vite plugin with client-safe filtering and HMR
 
 ## Installation
 
@@ -55,22 +56,13 @@ const env = loadEnv(schema);
 console.log(`Server running on port ${env.PORT}`);
 ```
 
-Documentation
+`loadEnv` reads from both `process.env` and your `.env` file (if present). This means it works out of the box on platforms like Vercel, Railway, Docker, and AWS Lambda where variables are injected into `process.env` directly — no `.env` file required.
+
+## Documentation
 
 [![Docs](https://img.shields.io/badge/docs-latest-blue?style=flat-square)](https://kasimlyee.github.io/dotenv-gad/)
 
-Full documentation is available via GitHub Pages (published from `docs/`).
-
-To preview locally:
-
-```bash
-npm ci
-npm run docs:serve
-```
-
-Docs preview on PRs
-
-When you open or update a pull request that changes docs, an automated preview will be published to GitHub Pages under `previews/pr-<number>/` and a comment with the preview link will be posted on the PR. This makes it easy to review documentation changes without merging.
+Full documentation is available at [kasimlyee.github.io/dotenv-gad](https://kasimlyee.github.io/dotenv-gad/).
 
 ## CLI Commands
 
@@ -90,11 +82,12 @@ npx dotenv-gad types
 
 ## Vite Plugin
 
-The Vite plugin provides build-time environment variable validation with automatic client-safe filtering for browser-based applications.
+The Vite plugin validates environment variables at build time and exposes a typed, client-safe subset to your browser code via a virtual module.
 
-### Add to your `vite.config.ts`:
+### Setup
 
 ```typescript
+// vite.config.ts
 import { defineConfig } from "vite";
 import dotenvGad from "dotenv-gad/vite";
 
@@ -102,38 +95,39 @@ export default defineConfig({
   plugins: [
     dotenvGad({
       schemaPath: "./env.schema.ts",
-      clientPrefix: "VITE_", // Default prefix for client-safe variables
-      publicKeys: [], // Additional non-prefixed keys to expose
-      generatedTypes: true, // Generate dotenv-gad.d.ts for IntelliSense
+      // clientPrefix: "VITE_",   // default — keys matching this prefix are exposed
+      // publicKeys: [],          // additional non-prefixed keys to expose
+      // generatedTypes: true,    // generate .d.ts for IntelliSense
     }),
   ],
 });
 ```
 
-### Use validated environment variables in your app:
+### Usage
 
 ```typescript
 import { env } from "dotenv-gad/client";
 
-console.log(env.VITE_API_URL); // Full type safety & validation
+console.log(env.VITE_API_URL); // Full type safety & autocomplete
 ```
 
 ### Key Features
 
-- **Build-time validation**: Environment checked every dev/build cycle
-- **Client-safe filtering**: Only `VITE_` prefixed variables (or custom `publicKeys`) exposed to browser
-- **Automatic TypeScript types**: Generated `dotenv-gad.d.ts` for full IntelliSense
-- **Sensitive protection**: Variables marked `sensitive: true` are excluded by default
-- **HMR support**: Hot reload on `.env` changes during development
+- **Build-time validation** — environment checked every dev/build cycle
+- **Client-safe filtering** — only `VITE_*` prefixed variables (or custom `publicKeys`) exposed to browser
+- **Sensitive protection** — variables marked `sensitive: true` are always excluded
+- **Auto-generated types** — `dotenv-gad.d.ts` gives full IntelliSense on `env.`
+- **HMR support** — hot reload on `.env` or schema changes during development
+- **SSR safety** — server-side code gets the full env, not the filtered subset
 
 ## Features
 
 ### Core Validation
 
-- Type checking (string, number, boolean, array, object)
-- Required/optional fields
-- Default values
+- Type checking (string, number, boolean, array, object, url, email, ip, port, json, date)
+- Required/optional fields with defaults
 - Custom validation functions
+- Value transforms
 - Environment-specific rules
 
 ### Advanced Types
@@ -150,13 +144,23 @@ console.log(env.VITE_API_URL); // Full type safety & validation
 }
 ```
 
-### CLI Features
+### Schema Composition
 
-- Color-coded output
-- Interactive fixes
-- Strict mode
-- Custom schema paths
-- CI/CD friendly
+Merge multiple schemas for modular configuration:
+
+```typescript
+import { defineSchema, composeSchema } from "dotenv-gad";
+
+const baseSchema = defineSchema({
+  NODE_ENV: { type: "string", default: "development" },
+});
+
+const dbSchema = defineSchema({
+  DATABASE_URL: { type: "string", required: true, sensitive: true },
+});
+
+const schema = composeSchema(baseSchema, dbSchema);
+```
 
 ### Secret Management
 
@@ -164,10 +168,35 @@ console.log(env.VITE_API_URL); // Full type safety & validation
 {
   API_KEY: {
     type: 'string',
-    sensitive: true, // Excluded from .env.example
+    sensitive: true,       // masked in errors, excluded from .env.example
     validate: (val) => val.startsWith('sk_')
   }
 }
+```
+
+### Grouping / Namespaced Envs
+
+Group related variables into a single validated object:
+
+```typescript
+const schema = defineSchema({
+  DATABASE: {
+    type: "object",
+    envPrefix: "DATABASE_", // optional; defaults to 'DATABASE_'
+    properties: {
+      DB_NAME: { type: "string", required: true },
+      PORT: { type: "port", default: 5432 },
+      PWD: { type: "string", sensitive: true },
+    },
+  },
+});
+```
+
+Given `DATABASE_DB_NAME=mydb`, `DATABASE_PORT=5432`, `DATABASE_PWD=supersecret`:
+
+```typescript
+const env = loadEnv(schema);
+// { DATABASE: { DB_NAME: 'mydb', PORT: 5432, PWD: 'supersecret' } }
 ```
 
 ## Framework Integrations
@@ -189,8 +218,6 @@ app.listen(env.PORT, () => {
 
 ### Next.js
 
-Create `next.config.js`:
-
 ```javascript
 const { loadEnv } = require("dotenv-gad");
 const schema = require("./env.schema");
@@ -204,9 +231,7 @@ module.exports = {
 };
 ```
 
-## Validation Reports
-
-Example error output:
+## Error Reporting
 
 ```
 Environment validation failed:
@@ -215,24 +240,43 @@ Environment validation failed:
   - API_KEY: Must start with 'sk_' (received: "invalid")
 ```
 
-By default values in the report are redacted (sensitive values are always masked). You can opt-in to include raw values in error reports when instantiating the validator (useful for local debugging) by using the `includeRaw` option. If you also want to reveal values marked as `sensitive: true` set `includeSensitive` to `true` (use with caution).
+Sensitive values are always masked in error output. Use `includeRaw` for local debugging:
 
-```ts
-// include raw values in errors (non-sensitive values only)
-import { loadEnv } from "dotenv-gad";
+```typescript
 const env = loadEnv(schema, { includeRaw: true });
 
 // or with finer control
 import { EnvValidator } from "dotenv-gad";
-const validator = new EnvValidator(schema, { includeRaw: true, includeSensitive: true });
-try {
-  validator.validate(process.env);
-} catch (err) {
-  console.error(String(err));
+const validator = new EnvValidator(schema, {
+  includeRaw: true,
+  includeSensitive: true,
+});
+```
+
+## More Examples
+
+### Custom Validators
+
+```typescript
+{
+  PASSWORD: {
+    type: 'string',
+    validate: (val) => val.length >= 8,
+    error: 'Password must be at least 8 characters'
+  }
 }
 ```
 
-## more usages
+### Transforms
+
+```typescript
+{
+  FEATURES: {
+    type: 'array',
+    transform: (val) => val.split(',')
+  }
+}
+```
 
 ### Environment-Specific Rules
 
@@ -248,72 +292,8 @@ try {
 }
 ```
 
-### Custom Validators
-
-```typescript
-{
-  PASSWORD: {
-    type: 'string',
-    validate: (val) => val.length >= 8,
-    error: 'Password must be at least 8 characters'
-  }
-}
-```
-
-### Transformations
-
-```typescript
-{
-  FEATURES: {
-    type: 'array',
-    transform: (val) => val.split(',')
-  }
-}
-```
-
-### Grouping / Namespaced envs
-
-You can group related environment variables into a single object using `object` with `properties` and an optional `envPrefix` (defaults to `KEY_`):
-
-```ts
-const schema = defineSchema({
-  DATABASE: {
-    type: 'object',
-    envPrefix: 'DATABASE_', // optional; defaults to 'DATABASE_'
-    properties: {
-      DB_NAME: { type: 'string', required: true },
-      PORT: { type: 'port', default: 5432 },
-      PWD: { type: 'string', sensitive: true }
-    }
-  }
-});
-```
-
-Given the following environment:
-
-```
-DATABASE_DB_NAME=mydb
-DATABASE_PORT=5432
-DATABASE_PWD=supersecret
-```
-
-`loadEnv(schema)` will return:
-
-```ts
-{ DATABASE: { DB_NAME: 'mydb', PORT: 5432, PWD: 'supersecret' } }
-```
-
-Notes and behavior:
-
-- The default `envPrefix` is `${KEY}_` (for `DATABASE` it's `DATABASE_`) if you don't specify `envPrefix`.
-- Prefixed variables take precedence over a JSON top-level env var (e.g., `DATABASE` = '{...}'). If both are present, prefixed variables win and a warning is printed.
-- In strict mode (`{ strict: true }`), unexpected subkeys inside a group (e.g., `DATABASE_EXTRA`) will cause validation to fail.
-- `sensitive` and `includeRaw` behavior still applies for grouped properties: sensitive properties are still masked in errors unless `includeSensitive` is explicitly set.
-
-The CLI `sync` command will now generate grouped entries in `.env.example` for object properties so it's easier to scaffold grouped configuration.
-
 ## License
 
 MIT © [Kasim Lyee]
 
-[Contributions](https://github.com/kasimlyee/dotenv-gad/blob/main/CONTRIBUTING.md) are welcome!!
+[Contributions](https://github.com/kasimlyee/dotenv-gad/blob/main/CONTRIBUTING.md) are welcome!
