@@ -23,7 +23,8 @@ export function validateEnv(
   schema: SchemaDefinition,
   options?: { strict?: boolean; path?: string }
 ) {
-  const env = dotenv.config({debug: false, path: options?.path}).parsed || {};
+  const fileEnv = dotenv.config({ debug: false, path: options?.path }).parsed || {};
+  const env = { ...process.env, ...fileEnv };
   const validator = new EnvValidator(schema, options);
   return validator.validate(env);
 }
