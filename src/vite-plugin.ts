@@ -145,7 +145,7 @@ function generateDtsContent(
     "// ──────────────────────────────────────────────────────────────",
     "",
     'declare module "dotenv-gad/client" {',
-    `  interface DotenvGadEnv extends ${envType} {}`,
+    `  export interface DotenvGadEnv extends ${envType} {}`,
     "  export const env: DotenvGadEnv;",
     "  export default env;",
     "}",
