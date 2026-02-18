@@ -1,8 +1,12 @@
 # dotenv-gad
 
 [![npm version](https://badge.fury.io/js/dotenv-gad.svg)](https://badge.fury.io/js/dotenv-gad)
+[![CI](https://github.com/kasimlyee/dotenv-gad/actions/workflows/ci.yml/badge.svg)](https://github.com/kasimlyee/dotenv-gad/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](https://nodejs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-first--class-blue?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Docs](https://img.shields.io/badge/docs-latest-blue?style=flat-square)](https://kasimlyee.github.io/dotenv-gad/)
+[![npm downloads](https://img.shields.io/npm/dm/dotenv-gad.svg)](https://www.npmjs.com/package/dotenv-gad)
 
 **dotenv-gad** is an environment variable validation library that brings type safety, schema validation, and runtime checks to your Node.js and JavaScript applications. It works with any environment variable source — `.env` files, platform dashboards (Vercel, Railway, Docker), CI/CD pipelines, or `process.env` directly.
 

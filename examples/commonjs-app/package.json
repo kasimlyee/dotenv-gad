@@ -1,0 +1,9 @@
+{
+  "name": "commonjs-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Example: using dotenv-gad in a CommonJS project (NestJS, Express, etc.)",
+  "dependencies": {
+    "dotenv-gad": "file:../.."
+  }
+}
