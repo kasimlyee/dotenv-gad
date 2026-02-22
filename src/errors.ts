@@ -1,5 +1,9 @@
 import { SchemaRule } from "./schema.js";
 
+
+const kValidationError = Symbol.for("dotenv-gad.EnvValidationError");
+const kAggregateError  = Symbol.for("dotenv-gad.EnvAggregateError");
+
 export class EnvValidationError extends Error {
   constructor(
     public key: string,
@@ -8,8 +12,26 @@ export class EnvValidationError extends Error {
   ) {
     super(message);
     this.name = "EnvValidationError";
+    Object.defineProperty(this, kValidationError, { value: true, enumerable: false });
+  }
+
+  
+  static [Symbol.hasInstance](instance: unknown): boolean {
+    return (
+      typeof instance === "object" &&
+      instance !== null &&
+      Object.prototype.hasOwnProperty.call(instance, kValidationError)
+    );
   }
 }
+
+// So I lock this constructor.name at module load time so Node.js uncaught exception
+// display always shows "EnvValidationError" even if the bundler renamed the class.
+Object.defineProperty(EnvValidationError, "name", {
+  value: "EnvValidationError",
+  configurable: true,
+  writable: false,
+});
 
 export class EnvAggregateError extends Error {
   constructor(
@@ -23,7 +45,17 @@ export class EnvAggregateError extends Error {
   ) {
     super(message);
     this.name = "EnvAggregateError";
+    Object.defineProperty(this, kAggregateError, { value: true, enumerable: false });
     Object.setPrototypeOf(this, EnvAggregateError.prototype);
+  }
+
+ 
+  static [Symbol.hasInstance](instance: unknown): boolean {
+    return (
+      typeof instance === "object" &&
+      instance !== null &&
+      Object.prototype.hasOwnProperty.call(instance, kAggregateError)
+    );
   }
 
   toString() {
@@ -39,6 +71,13 @@ export class EnvAggregateError extends Error {
     return `${this.message}:\n${errorList}`;
   }
 }
+
+
+Object.defineProperty(EnvAggregateError, "name", {
+  value: "EnvAggregateError",
+  configurable: true,
+  writable: false,
+});
 
 /** @deprecated Use `EnvAggregateError` instead — avoids shadowing the built-in `AggregateError`. */
 export const AggregateError = EnvAggregateError;
