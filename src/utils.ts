@@ -1,8 +1,23 @@
 import { SchemaDefinition } from "./schema.js";
-import dotenv from "dotenv";
+import { parse as parseEnv } from "dotenv";
+import { readFileSync, existsSync } from "node:fs";
 import { EnvValidator } from "./validator.js";
 import type { InferEnv } from "./types.js";
 
+/**
+ * Silently reads and parses a .env file without injecting into process.env.
+ * Returns an empty object when the file does not exist (e.g. Vercel, Railway,
+ * Docker — where env vars are already present in process.env).
+ */
+export function readEnvFile(path?: string): Record<string, string> {
+  const filePath = path ?? ".env";
+  if (!existsSync(filePath)) return {};
+  try {
+    return parseEnv(readFileSync(filePath, "utf-8"));
+  } catch {
+    return {};
+  }
+}
 
 /**
  * Loads environment variables from .env file and validates them against
@@ -21,7 +36,7 @@ export function loadEnv<S extends SchemaDefinition>(
   schema: S,
   options?: { strict?: boolean; includeRaw?: boolean; includeSensitive?: boolean; path?: string }
 ): InferEnv<S> {
-  const fileEnv = dotenv.config({ debug: false, path: options?.path }).parsed || {};
+  const fileEnv = readEnvFile(options?.path);
   const env = { ...process.env, ...fileEnv };
 
   const validator = new EnvValidator(schema, options);
