@@ -1,6 +1,5 @@
 import { SchemaRule } from "./schema.js";
 
-
 const kValidationError = Symbol.for("dotenv-gad.EnvValidationError");
 const kAggregateError  = Symbol.for("dotenv-gad.EnvAggregateError");
 
@@ -15,7 +14,6 @@ export class EnvValidationError extends Error {
     Object.defineProperty(this, kValidationError, { value: true, enumerable: false });
   }
 
-  
   static [Symbol.hasInstance](instance: unknown): boolean {
     return (
       typeof instance === "object" &&
@@ -25,26 +23,46 @@ export class EnvValidationError extends Error {
   }
 }
 
-// So I lock this constructor.name at module load time so Node.js uncaught exception
-// display always shows "EnvValidationError" even if the bundler renamed the class.
+
 Object.defineProperty(EnvValidationError, "name", {
   value: "EnvValidationError",
   configurable: true,
   writable: false,
 });
 
+type ErrorItem = {
+  key: string;
+  message: string;
+  value?: any;
+  rule?: SchemaRule;
+};
+
+// WeakMap will store the full errors array completely off the instance, 
+// so Node.js inspect never sees it — no schema internals in logs.
+const errorsMap = new WeakMap<EnvAggregateError, ErrorItem[]>();
+
 export class EnvAggregateError extends Error {
-  constructor(
-    public errors: {
-      key: string;
-      message: string;
-      value?: any;
-      rule?: SchemaRule;
-    }[],
-    message: string
-  ) {
-    super(message);
+  get errors(): ErrorItem[] {
+    return errorsMap.get(this)!;
+  }
+
+  constructor(errors: ErrorItem[], message: string) {
+    const summary = errors
+      .map((e) => {
+        let line = `\n  - ${e.key}: ${e.message}`;
+        if (e.value !== undefined) line += ` (received: ${JSON.stringify(e.value)})`;
+        if (e.rule?.docs) line += `\n    hint: ${e.rule.docs}`;
+        return line;
+      })
+      .join("");
+
+    super(message + summary);
     this.name = "EnvAggregateError";
+
+    // Store full errors (including rule) off-instance, invisible to Node.js
+    // inspect but fully accessible via the .errors getter in catch blocks.
+    errorsMap.set(this, errors);
+
     Object.defineProperty(this, kAggregateError, { value: true, enumerable: false });
     Object.setPrototypeOf(this, EnvAggregateError.prototype);
   }
@@ -68,7 +86,7 @@ export class EnvAggregateError extends Error {
         return msg;
       })
       .join("\n");
-    return `${this.message}:\n${errorList}`;
+    return `${this.name}: ${this.message}\n${errorList}`;
   }
 }
 
