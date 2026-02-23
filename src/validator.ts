@@ -2,6 +2,11 @@ import { SchemaDefinition, SchemaRule } from "./schema.js";
 import { EnvAggregateError } from "./errors.js";
 
 export class EnvValidator {
+  private static readonly EMAIL_REGEX =  /^[-!#$%&'*+\/0-9=?A-Z^_a-z`{|}~](\.?[-!#$%&'*+\/0-9=?A-Z^_a-z`{|}~])*@[a-zA-Z0-9](-*\.?[a-zA-Z0-9])*\.[a-zA-Z](-?[a-zA-Z0-9])+$/;
+  private static readonly LOCAL_MAX = 64;
+  private static readonly DOMAIN_MAX = 255;
+  private static readonly DOMAIN_PART_MAX = 63;
+
   private errors: {
     key: string;
     message: string;
@@ -250,7 +255,7 @@ export class EnvValidator {
         break;
 
       case "email":
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value))) {
+        if (!this.validateEmail(value)) {
           throw new Error("Must be a valid email");
         }
         break;
@@ -357,5 +362,27 @@ export class EnvValidator {
     const envName = process.env.NODE_ENV || "development";
     const envRule = rule.env?.[envName] || {};
     return { ...rule, ...envRule };
+  }
+
+
+  /*
+ * Email validation logic adapted from:
+ * Project: email-validator
+ *  * Repository: https://github.com/manishsaraan/email-validator
+ * 
+ * * Adapted to enforce email validation rules more strictly
+ */
+  private validateEmail(email: string): boolean {
+    if(!email) return false;
+
+    const emailParts = email.split("@");
+    if(emailParts.length !== 2) return false;
+
+    const [local, domain] = emailParts;
+    if(local.length > EnvValidator.LOCAL_MAX || domain.length > EnvValidator.DOMAIN_MAX) return false;
+    const domainParts = domain.split(".");
+    if(domainParts.some(part => part.length > EnvValidator.DOMAIN_PART_MAX)) return false;
+
+    return EnvValidator.EMAIL_REGEX.test(email);
   }
 }
