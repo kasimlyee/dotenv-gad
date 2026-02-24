@@ -265,3 +265,107 @@ describe("Validator: encrypted + required", () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// encrypted + enum: enum check runs on decrypted value
+// ---------------------------------------------------------------------------
+
+describe("Validator: encrypted + enum", () => {
+  test("decrypted value that matches enum passes", () => {
+    const { publicKeyHex, privateKeyHex } = generateKeyPair();
+    const schema = defineSchema({
+      NODE_ENV: {
+        type: "string",
+        enum: ["development", "production", "test"],
+        encrypted: true,
+      },
+    });
+
+    const env = makeEncryptedEnv({ NODE_ENV: "production" }, publicKeyHex);
+    const v = new EnvValidator(schema, { keysPath: ".nonexistent-xyz.keys" });
+    process.env.ENVGAD_PRIVATE_KEY = privateKeyHex;
+    try {
+      const result = v.validate(env);
+      expect(result.NODE_ENV).toBe("production");
+    } finally {
+      delete process.env.ENVGAD_PRIVATE_KEY;
+    }
+  });
+
+  test("decrypted value not in enum throws EnvAggregateError", () => {
+    const { publicKeyHex, privateKeyHex } = generateKeyPair();
+    const schema = defineSchema({
+      NODE_ENV: {
+        type: "string",
+        enum: ["development", "production", "test"],
+        encrypted: true,
+      },
+    });
+
+    const env = makeEncryptedEnv({ NODE_ENV: "staging" }, publicKeyHex);
+    const v = new EnvValidator(schema, { keysPath: ".nonexistent-xyz.keys" });
+    process.env.ENVGAD_PRIVATE_KEY = privateKeyHex;
+    try {
+      expect(() => v.validate(env)).toThrow(EnvAggregateError);
+    } finally {
+      delete process.env.ENVGAD_PRIVATE_KEY;
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// encrypted + boolean: type coercion runs on decrypted value
+// ---------------------------------------------------------------------------
+
+describe("Validator: encrypted + boolean", () => {
+  test("decrypted 'true' string coerces to boolean true", () => {
+    const { publicKeyHex, privateKeyHex } = generateKeyPair();
+    const schema = defineSchema({
+      FEATURE_FLAG: { type: "boolean", encrypted: true },
+    });
+
+    const env = makeEncryptedEnv({ FEATURE_FLAG: "true" }, publicKeyHex);
+    const v = new EnvValidator(schema, { keysPath: ".nonexistent-xyz.keys" });
+    process.env.ENVGAD_PRIVATE_KEY = privateKeyHex;
+    try {
+      const result = v.validate(env);
+      expect(result.FEATURE_FLAG).toBe(true);
+    } finally {
+      delete process.env.ENVGAD_PRIVATE_KEY;
+    }
+  });
+
+  test("decrypted 'false' string coerces to boolean false", () => {
+    const { publicKeyHex, privateKeyHex } = generateKeyPair();
+    const schema = defineSchema({
+      FEATURE_FLAG: { type: "boolean", encrypted: true },
+    });
+
+    const env = makeEncryptedEnv({ FEATURE_FLAG: "false" }, publicKeyHex);
+    const v = new EnvValidator(schema, { keysPath: ".nonexistent-xyz.keys" });
+    process.env.ENVGAD_PRIVATE_KEY = privateKeyHex;
+    try {
+      const result = v.validate(env);
+      expect(result.FEATURE_FLAG).toBe(false);
+    } finally {
+      delete process.env.ENVGAD_PRIVATE_KEY;
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// encrypted + default: default is used when field is absent, no key needed
+// ---------------------------------------------------------------------------
+
+describe("Validator: encrypted + default", () => {
+  test("absent encrypted field with a default returns the default without needing a key", () => {
+    const schema = defineSchema({
+      OPTIONAL_SECRET: { type: "string", encrypted: true, default: "fallback" },
+    });
+
+    delete process.env.ENVGAD_PRIVATE_KEY;
+    const v = new EnvValidator(schema, { keysPath: ".nonexistent-xyz.keys" });
+    const result = v.validate({});
+    expect(result.OPTIONAL_SECRET).toBe("fallback");
+  });
+});

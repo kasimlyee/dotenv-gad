@@ -41,7 +41,7 @@ export default function (program: Command) {
               : "") +
             chalk.yellow(
               "\n\n   Generating new keys invalidates all existing encrypted values.\n" +
-                "   Use 'npx dotenv-gad rotate' for safe rotation (coming soon).\n"
+                "   Use 'npx dotenv-gad rotate' for safe key rotation.\n"
             )
         );
 

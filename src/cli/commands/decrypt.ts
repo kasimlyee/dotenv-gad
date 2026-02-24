@@ -18,7 +18,7 @@ async function confirm(question: string): Promise<boolean> {
   }
 }
 
-export default function (program: Command) {
+export default function (_program: Command) {
   return new Command("decrypt")
     .description("Decrypt encrypted values and print them to stdout (or write back with --write)")
     .option("--keys <file>", "Path to the .env.keys private key file", ".env.keys")
@@ -145,12 +145,13 @@ export default function (program: Command) {
           return;
         }
 
+        const replaceRegexes = Object.fromEntries(
+          Object.keys(decrypted).map((k) => [k, new RegExp(`^(${k}\\s*=).*$`, "m")])
+        );
+
         let updatedContent = envContent;
         for (const [key, value] of Object.entries(decrypted)) {
-          updatedContent = updatedContent.replace(
-            new RegExp(`^(${key}\\s*=).*$`, "m"),
-            `$1${value}`
-          );
+          updatedContent = updatedContent.replace(replaceRegexes[key], `$1${value}`);
         }
 
         writeFileSync(envPath, updatedContent);

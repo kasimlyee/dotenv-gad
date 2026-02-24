@@ -7,7 +7,7 @@ import { encryptEnvValue, isEncryptedValue } from "../../crypto.js";
 import { EncryptionKeyMissingError } from "../../errors.js";
 import { loadSchema } from "./utils.js";
 
-export default function (program: Command) {
+export default function (_program: Command) {
   return new Command("encrypt")
     .description("Encrypt plaintext values for fields marked encrypted: true in the schema")
     .action(async (_opts, command) => {
@@ -57,6 +57,9 @@ export default function (program: Command) {
 
         spinner.text = `Encrypting ${encryptedFields.length} field(s)…`;
 
+        const keyRegex = (k: string) => new RegExp(`^(${k}\\s*=).*$`, "m");
+        const replaceRegexes = Object.fromEntries(encryptedFields.map((k) => [k, keyRegex(k)]));
+
         let updatedContent = envContent;
         let encryptedCount = 0;
         const results: { key: string; status: "encrypted" | "skipped" | "missing" }[] = [];
@@ -75,11 +78,7 @@ export default function (program: Command) {
           }
 
           const encrypted = encryptEnvValue(value, publicKeyHex, key);
-          // Replace the value in-place, preserving surrounding file content
-          updatedContent = updatedContent.replace(
-            new RegExp(`^(${key}\\s*=).*$`, "m"),
-            `$1${encrypted}`
-          );
+          updatedContent = updatedContent.replace(replaceRegexes[key], `$1${encrypted}`);
           results.push({ key, status: "encrypted" });
           encryptedCount++;
         }

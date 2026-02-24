@@ -109,7 +109,7 @@ export default function (_program: Command) {
 
         const spinner2 = ora("Step 1/4: Decrypting current values…").start();
 
-        // Step 1: Decrypt all encrypted values with the old key
+        // Decrypt all encrypted values with the old key
         const decrypted: Record<string, string> = {};
         const decryptErrors: string[] = [];
 
@@ -134,13 +134,13 @@ export default function (_program: Command) {
 
         spinner2.text = "Step 2/4: Generating new key pair…";
 
-        // Step 2: Generate new key pair
+        // Generate new key pair
         const { publicKeyHex: newPublicKeyHex, privateKeyHex: newPrivateKeyHex } =
           generateKeyPair();
 
         spinner2.text = "Step 3/4: Re-encrypting values with new key…";
 
-        // Step 3: Re-encrypt all values with the new public key
+        // Re-encrypt all values with the new public key
         const reEncrypted: Record<string, string> = {};
         for (const key of toRotate) {
           reEncrypted[key] = encryptEnvValue(decrypted[key], newPublicKeyHex, key);
@@ -148,7 +148,7 @@ export default function (_program: Command) {
 
         spinner2.text = "Step 4/4: Writing updated files…";
 
-        // Step 4: Update .env — replace all encrypted values and the public key
+        // Update .env — replace all encrypted values and the public key
         let updatedEnvContent = envContent;
 
         // Update ENVGAD_PUBLIC_KEY
@@ -162,17 +162,17 @@ export default function (_program: Command) {
           updatedEnvContent += `${sep}ENVGAD_PUBLIC_KEY=${newPublicKeyHex}\n`;
         }
 
-        // Replace each re-encrypted value
+        const replaceRegexes = Object.fromEntries(
+          Object.keys(reEncrypted).map((k) => [k, new RegExp(`^(${k}\\s*=).*$`, "m")])
+        );
+
         for (const [key, value] of Object.entries(reEncrypted)) {
-          updatedEnvContent = updatedEnvContent.replace(
-            new RegExp(`^(${key}\\s*=).*$`, "m"),
-            `$1${value}`
-          );
+          updatedEnvContent = updatedEnvContent.replace(replaceRegexes[key], `$1${value}`);
         }
 
         writeFileSync(envPath, updatedEnvContent);
 
-        // Step 5: Update .env.keys — keep old key as ENVGAD_PRIVATE_KEY_OLD
+        // Update .env.keys — keep old key as ENVGAD_PRIVATE_KEY_OLD
         const keysFileContent =
           "# KEEP THIS FILE SECRET — DO NOT COMMIT TO GIT\n" +
           "# Share securely via 1Password, Vault, or a secure channel\n" +

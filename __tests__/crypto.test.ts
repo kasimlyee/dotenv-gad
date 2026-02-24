@@ -144,6 +144,84 @@ describe("Error cases", () => {
 });
 
 // ---------------------------------------------------------------------------
+// encryptEnvValue — input validation (new guards)
+// ---------------------------------------------------------------------------
+
+describe("encryptEnvValue: public key validation", () => {
+  test("throws when public key is wrong length (too short)", () => {
+    expect(() => encryptEnvValue("value", "deadbeef", "VAR")).toThrow(/expected 88-char/i);
+  });
+
+  test("throws when public key contains non-hex characters", () => {
+    const { publicKeyHex } = generateKeyPair();
+    const bad = publicKeyHex.slice(0, 87) + "Z"; // replace last char with non-hex
+    expect(() => encryptEnvValue("value", bad, "VAR")).toThrow(/expected 88-char/i);
+  });
+
+  test("throws when public key is empty string", () => {
+    expect(() => encryptEnvValue("value", "", "VAR")).toThrow(/expected 88-char/i);
+  });
+
+  test("throws when public key is too long", () => {
+    const { publicKeyHex } = generateKeyPair();
+    expect(() => encryptEnvValue("value", publicKeyHex + "00", "VAR")).toThrow(/expected 88-char/i);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// loadPrivateKey — length validation (new guard)
+// ---------------------------------------------------------------------------
+
+describe("loadPrivateKey: key length validation", () => {
+  test("throws when ENVGAD_PRIVATE_KEY is valid hex but truncated (94 chars, not 96)", () => {
+    const original = process.env.ENVGAD_PRIVATE_KEY;
+    process.env.ENVGAD_PRIVATE_KEY = "ab".repeat(47); // 94 chars
+    try {
+      expect(() => loadPrivateKey({ keysPath: ".nonexistent-xyz.keys" })).toThrow(
+        /expected 96-char/i
+      );
+    } finally {
+      if (original !== undefined) {
+        process.env.ENVGAD_PRIVATE_KEY = original;
+      } else {
+        delete process.env.ENVGAD_PRIVATE_KEY;
+      }
+    }
+  });
+
+  test("throws when ENVGAD_PRIVATE_KEY is valid hex but too long (100 chars)", () => {
+    const original = process.env.ENVGAD_PRIVATE_KEY;
+    process.env.ENVGAD_PRIVATE_KEY = "ab".repeat(50); // 100 chars
+    try {
+      expect(() => loadPrivateKey({ keysPath: ".nonexistent-xyz.keys" })).toThrow(
+        /expected 96-char/i
+      );
+    } finally {
+      if (original !== undefined) {
+        process.env.ENVGAD_PRIVATE_KEY = original;
+      } else {
+        delete process.env.ENVGAD_PRIVATE_KEY;
+      }
+    }
+  });
+
+  test("accepts ENVGAD_PRIVATE_KEY that is exactly 96 valid hex chars", () => {
+    const { privateKeyHex } = generateKeyPair();
+    const original = process.env.ENVGAD_PRIVATE_KEY;
+    process.env.ENVGAD_PRIVATE_KEY = privateKeyHex;
+    try {
+      expect(loadPrivateKey({ keysPath: ".nonexistent-xyz.keys" })).toBe(privateKeyHex);
+    } finally {
+      if (original !== undefined) {
+        process.env.ENVGAD_PRIVATE_KEY = original;
+      } else {
+        delete process.env.ENVGAD_PRIVATE_KEY;
+      }
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
 // isEncryptedValue
 // ---------------------------------------------------------------------------
 
