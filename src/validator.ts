@@ -32,7 +32,7 @@ export class EnvValidator {
   validate(env: Record<string, string | undefined>) {
     this.errors = [];
 
-    // Step 1: Decrypt encrypted fields and check for schema/value mismatches.
+    // First Decrypt encrypted fields and check for schema/value mismatches.
     const { processedEnv, skipKeys } = this.preprocessEncryption(env);
 
     const result: Record<string, any> = {};
@@ -63,13 +63,12 @@ export class EnvValidator {
       }
     }
 
-    // Micro-optimization: avoid creating intermediate arrays from Object.entries
     const schemaKeys = Object.keys(this.schema);
     for (let i = 0; i < schemaKeys.length; i++) {
       const key = schemaKeys[i];
       const rule = this.schema[key];
 
-      // Skip keys that already have a preprocessing error (encryption mismatch, decryption failure, etc.)
+      // Keys that already have a preprocessing error (encryption mismatch, decryption failure, etc.) get skipped
       if (skipKeys.has(key)) continue;
 
       try {
@@ -157,7 +156,17 @@ export class EnvValidator {
     return result;
   }
 
-  // Redact or trim sensitive values for error reporting
+  /**
+   * Redacts a value to hide its contents, following these rules:
+   * - If `value` is undefined, returns undefined.
+   * - If `sensitive` is true, returns `"****"`.
+   * - If `value` is not a string, returns the original value.
+   * - If `value` is a string longer than 64 characters, truncates it to 4 characters
+   *   at the start and end, and replaces the middle with `"..."`.
+   * - Otherwise, returns the original string.
+   * @param value The value to redact.
+   * @param sensitive If true, redacts the value to `"****"`.
+   */
   private redactValue(value: any, sensitive?: boolean) {
     if (value === undefined) return undefined;
     if (sensitive) return "****";
@@ -168,8 +177,17 @@ export class EnvValidator {
     return value;
   }
 
-  // Try to quickly determine if a string *might* be JSON before parsing to avoid
-  // costly exceptions in the hot path for clearly non-JSON values.
+
+  /**
+   * Tries to parse the given value as a JSON object.
+   * Returns `{ ok: true, value: JSON.parse(s) }` if successful,
+   * or `{ ok: false }` if not.
+   * The following conditions will cause the function to return `{ ok: false }`:
+   * - `value` is not a string
+   * - `value` is an empty string
+   * - `value` does not start with one of the following characters: `{`, `[`, `"`, `t`, `f`, `n`, or a digit
+   * - `value` cannot be parsed as a JSON object
+   */
   private tryParseJSON(value: any) {
     if (typeof value !== "string") return { ok: false } as const;
     const s = value.trim();
@@ -374,17 +392,13 @@ export class EnvValidator {
     return { ...rule, ...envRule };
   }
 
+  
   /**
-   * Preprocessing step that runs before normal validation.
-   *
-   * - Decrypts values for fields with `encrypted: true`.
-   * - Adds errors for plaintext values on `encrypted: true` fields (unless `allowPlaintext` is set).
-   * - Adds errors for encrypted-format values on fields that don't declare `encrypted: true`.
-   * - Throws `EncryptionKeyMissingError` early if decryption is needed but no private key is available.
-   *
-   * Returns a shallow copy of `env` with encrypted values replaced by their plaintexts,
-   * plus a `skipKeys` set for keys that already have a preprocessing error and must be
-   * skipped in the main validation loop to avoid duplicate error entries.
+   * Preprocesses environment variables to detect and handle encrypted values.
+   *   1. Decrypts any encrypted values using the private key.
+   *   2. Checks if any plaintext values are present for fields that should be encrypted.
+   *   3. Flags any env value that looks encrypted but the schema doesn't declare encrypted: true.
+   * @returns An object containing the processed environment variables and a set of keys that were skipped due to errors.
    */
   private preprocessEncryption(env: Record<string, string | undefined>): {
     processedEnv: Record<string, string | undefined>;

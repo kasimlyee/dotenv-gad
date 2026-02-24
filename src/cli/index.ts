@@ -15,6 +15,9 @@ import docsCommand from "./commands/docs.js";
 import keygenCommand from "./commands/keygen.js";
 import encryptCommand from "./commands/encrypt.js";
 import decryptCommand from "./commands/decrypt.js";
+import statusCommand from "./commands/status.js";
+import verifyCommand from "./commands/verify.js";
+import rotateCommand from "./commands/rotate.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const pkg = JSON.parse(
@@ -48,6 +51,9 @@ export function createCLI() {
     keygenCommand,
     encryptCommand,
     decryptCommand,
+    statusCommand,
+    verifyCommand,
+    rotateCommand,
   ];
 
   commands.forEach((command) => {

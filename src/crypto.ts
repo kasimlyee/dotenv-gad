@@ -12,8 +12,6 @@ import type { CipherGCM, DecipherGCM } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { DecryptionFailedError } from "./errors.js";
 
-// X25519 SPKI DER prefix (12 bytes) that precedes the raw 32-byte public key.
-// Breakdown: SEQUENCE(42) + SEQUENCE(5) + OID(id-X25519=1.3.101.110) + BIT STRING header
 const SPKI_PREFIX = Buffer.from("302a300506032b656e032100", "hex");
 
 const RAW_KEY_LENGTH = 32;
@@ -22,7 +20,12 @@ const AUTH_TAG_LENGTH = 16;
 const PROTOCOL_PREFIX = "encrypted:";
 const ENCRYPTION_VERSION = "v1";
 const HKDF_INFO = Buffer.from("dotenv-gad:v1");
+const HKDF_SALT = Buffer.alloc(0); 
 const AAD_PREFIX = "dotenv-gad:v1:";
+
+// Exact byte lengths for stored key formats (DER-encoded)
+const PRIVATE_KEY_HEX_LENGTH = 96; 
+const PUBLIC_KEY_HEX_LENGTH = 88;  
 
 export interface KeyPair {
   /** Hex-encoded 44-byte SPKI DER. Store as ENVGAD_PUBLIC_KEY in .env (safe to commit). */
@@ -31,9 +34,13 @@ export interface KeyPair {
   privateKeyHex: string;
 }
 
+
 /**
- * Generate a fresh X25519 key pair for encryption/decryption.
- * Returns hex-encoded DER buffers that can be written directly to .env and .env.keys.
+ * Generates a new key pair using the X25519 curve.
+ *
+ * @returns An object containing the hex-encoded public and private keys.
+ * The public key is safe to commit to version control (e.g. .env), while the private key
+ * should be kept secret and stored securely (e.g. .env.keys).
  */
 export function generateKeyPair(): KeyPair {
   const { publicKey, privateKey } = generateKeyPairSync("x25519", {
@@ -46,40 +53,47 @@ export function generateKeyPair(): KeyPair {
   };
 }
 
+
 /**
- * Encrypt a plaintext value using ECIES (X25519 + HKDF-SHA256 + ChaCha20-Poly1305).
+ * Encrypts a plaintext string using ChaCha20-Poly1305 authenticated encryption.
+ * The encryption key is derived from the shared secret of the ephemeral key pair
+ * and the recipient's public key using HKDF-SHA256.
  *
- * @param plaintext - Raw string value to encrypt.
- * @param recipientPublicKeyHex - Hex-encoded SPKI DER of the recipient's public key (from DOTENV_PUBLIC_KEY).
- * @param varName - Schema variable name, used as AAD to prevent field-swapping attacks.
- * @returns Wire-format ciphertext string: `encrypted:v1:<base64>`.
+ * @param plaintext - The plaintext string to encrypt.
+ * @param recipientPublicKeyHex - Hex-encoded 44-byte SPKI DER of the recipient's public key.
+ * @param varName - The name of the environment variable being encrypted.
+ * @returns A wire-format string containing the encrypted ciphertext and
+ *   ephemeral public key information: `encrypted:v1:<base64>`.
  */
+
 export function encryptEnvValue(
   plaintext: string,
   recipientPublicKeyHex: string,
   varName: string
 ): string {
+  if (!/^[a-fA-F0-9]+$/.test(recipientPublicKeyHex) || recipientPublicKeyHex.length !== PUBLIC_KEY_HEX_LENGTH) {
+    throw new Error(
+      `Invalid ENVGAD_PUBLIC_KEY format (expected ${PUBLIC_KEY_HEX_LENGTH}-char hex-encoded SPKI DER, got ${recipientPublicKeyHex.length} chars)`
+    );
+  }
+
   const recipientSpki = Buffer.from(recipientPublicKeyHex, "hex");
 
-  // Ephemeral key pair — new for every encryption call (forward secrecy, non-deterministic)
   const { publicKeyHex: ephPubHex, privateKeyHex: ephPrivHex } = generateKeyPair();
   const ephSpki = Buffer.from(ephPubHex, "hex");
   const ephPkcs8 = Buffer.from(ephPrivHex, "hex");
 
-  // ECDH: ephemeral private × recipient public → shared secret
   const sharedSecret = diffieHellman({
     privateKey: createPrivateKey({ key: ephPkcs8, format: "der", type: "pkcs8" }),
     publicKey: createPublicKey({ key: recipientSpki, format: "der", type: "spki" }),
   });
 
-  // HKDF-SHA256: shared secret → 32-byte ChaCha20 key
   const encKey = Buffer.from(
-    hkdfSync("sha256", sharedSecret, Buffer.alloc(0), HKDF_INFO, 32)
+    hkdfSync("sha256", sharedSecret, HKDF_SALT, HKDF_INFO, 32)
   );
 
   const nonce = randomBytes(NONCE_LENGTH);
 
-  // ChaCha20-Poly1305 authenticated encryption
   const cipher = createCipheriv(
     "chacha20-poly1305",
     encKey,
@@ -91,10 +105,8 @@ export function encryptEnvValue(
   const ciphertext = Buffer.concat([cipher.update(plaintext, "utf8"), cipher.final()]);
   const authTag = cipher.getAuthTag();
 
-  // Extract compact 32-byte raw public key from 44-byte SPKI DER (SPKI_PREFIX is 12 bytes)
   const rawEphPubKey = ephSpki.subarray(SPKI_PREFIX.length);
 
-  // Wire format: rawEphPubKey[32] + nonce[12] + ciphertext[N] + authTag[16]
   const payload = Buffer.concat([rawEphPubKey, nonce, ciphertext, authTag]);
   return `${PROTOCOL_PREFIX}${ENCRYPTION_VERSION}:${payload.toString("base64")}`;
 }
@@ -140,14 +152,12 @@ export function decryptEnvValue(
     );
   }
 
-  // Split wire payload
   const rawEphPubKey = payload.subarray(0, RAW_KEY_LENGTH);
   const nonce = payload.subarray(RAW_KEY_LENGTH, RAW_KEY_LENGTH + NONCE_LENGTH);
   const rest = payload.subarray(RAW_KEY_LENGTH + NONCE_LENGTH);
   const authTag = rest.subarray(rest.length - AUTH_TAG_LENGTH);
   const ciphertext = rest.subarray(0, rest.length - AUTH_TAG_LENGTH);
 
-  // Reconstruct ephemeral SPKI DER from 32-byte raw key
   const ephSpki = Buffer.concat([SPKI_PREFIX, rawEphPubKey]);
 
   // ECDH: recipient private × ephemeral public → shared secret
@@ -159,7 +169,7 @@ export function decryptEnvValue(
 
   // HKDF-SHA256: same derivation as encryption
   const encKey = Buffer.from(
-    hkdfSync("sha256", sharedSecret, Buffer.alloc(0), HKDF_INFO, 32)
+    hkdfSync("sha256", sharedSecret, HKDF_SALT, HKDF_INFO, 32)
   );
 
   const decipher = createDecipheriv(
@@ -180,19 +190,29 @@ export function decryptEnvValue(
   }
 }
 
+
 /**
- * Returns true if the value looks like a dotenv-gad encrypted token.
+ * Returns true if the given value starts with the encrypted value
+ * prefix, and false otherwise.
+ *
+ * The encrypted value prefix is in the format of
+ * `encrypted:v1:<base64-encoded-payload>`.
+ *
+ * @param {string} value the value to check
+ * @returns {boolean} true if the value is an encrypted value, false otherwise
  */
 export function isEncryptedValue(value: string): boolean {
   return value.startsWith(`${PROTOCOL_PREFIX}${ENCRYPTION_VERSION}:`);
 }
 
+
 /**
- * Load the private key hex string using the standard resolution order:
- * 1. `.env.keys` file at `keysPath` (default: `.env.keys`)
- * 2. `ENVGAD_PRIVATE_KEY` environment variable
- *
- * @returns Hex string of the PKCS8 DER private key, or `null` if not found.
+ * Loads the ENVGAD_PRIVATE_KEY value from the given path (default: `.env.keys`)
+ * or the ENVGAD_PRIVATE_KEY environment variable if present.
+ * Returns the hex-encoded DER value of the private key if found, or null otherwise.
+ * @param {Object} [options] Optional options.
+ * @param {string} [options.keysPath] Path to the `.env.keys` file (default: `.env.keys`).
+ * @returns {string | null} Hex-encoded DER value of the private key if found, or null otherwise.
  */
 export function loadPrivateKey(options: { keysPath?: string } = {}): string | null {
   const keysPath = options.keysPath ?? ".env.keys";
@@ -205,8 +225,10 @@ export function loadPrivateKey(options: { keysPath?: string } = {}): string | nu
 
   const envKey = process.env.ENVGAD_PRIVATE_KEY;
   if (envKey) {
-    if (!/^[a-fA-F0-9]+$/.test(envKey)) {
-      throw new Error("Invalid ENVGAD_PRIVATE_KEY format (expected hex-encoded DER)");
+    if (!/^[a-fA-F0-9]+$/.test(envKey) || envKey.length !== PRIVATE_KEY_HEX_LENGTH) {
+      throw new Error(
+        `Invalid ENVGAD_PRIVATE_KEY format (expected ${PRIVATE_KEY_HEX_LENGTH}-char hex-encoded PKCS8 DER, got ${envKey.length} chars)`
+      );
     }
     return envKey;
   }

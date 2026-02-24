@@ -5,10 +5,10 @@ import { loadSchema, applyFix } from "./utils.js";
 import { validateEnv } from "../../index.js";
 import { EnvAggregateError } from "../../errors.js";
 
-export default function (program: Command) {
+export default function (_program: Command) {
   return new Command("fix")
     .description("Interactively fix environment issues")
-    .action(async (options, command) => {
+    .action(async (_options, command) => {
       const rootOpts = command.parent.opts();
       const schema = await loadSchema(rootOpts.schema);
       const envPath = rootOpts.env || ".env";
