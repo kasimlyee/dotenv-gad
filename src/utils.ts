@@ -19,7 +19,16 @@ import type { InferEnv } from "./types.js";
  */
 export function loadEnv<S extends SchemaDefinition>(
   schema: S,
-  options?: { strict?: boolean; includeRaw?: boolean; includeSensitive?: boolean; path?: string }
+  options?: {
+    strict?: boolean;
+    includeRaw?: boolean;
+    includeSensitive?: boolean;
+    path?: string;
+    /** When true, fields with `encrypted: true` that have plaintext values emit a warning instead of an error. */
+    allowPlaintext?: boolean;
+    /** Path to the `.env.keys` file containing ENVGAD_PRIVATE_KEY (default: `.env.keys`). */
+    keysPath?: string;
+  }
 ): InferEnv<S> {
   const fileEnv = dotenv.config({ debug: false, path: options?.path }).parsed || {};
   const env = { ...process.env, ...fileEnv };
