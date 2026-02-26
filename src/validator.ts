@@ -1,7 +1,13 @@
 import { SchemaDefinition, SchemaRule } from "./schema.js";
 import { EnvAggregateError } from "./errors.js";
+import net from "net";
 
 export class EnvValidator {
+  private static readonly EMAIL_REGEX =  /^[-!#$%&'*+\/0-9=?A-Z^_a-z`{|}~](\.?[-!#$%&'*+\/0-9=?A-Z^_a-z`{|}~])*@[a-zA-Z0-9](-*\.?[a-zA-Z0-9])*\.[a-zA-Z](-?[a-zA-Z0-9])+$/;
+  private static readonly LOCAL_MAX = 64;
+  private static readonly DOMAIN_MAX = 255;
+  private static readonly DOMAIN_PART_MAX = 63;
+
   private errors: {
     key: string;
     message: string;
@@ -178,13 +184,24 @@ export class EnvValidator {
       return effectiveRule.default;
     }
 
+    if (typeof value === "string") {
+      value = value.trim();
+      // Re-check emptiness after trim in case the value was only whitespace
+      if (value === "") {
+        if (effectiveRule.required)
+          throw new Error(`Missing required environment variable`);
+        return effectiveRule.default;
+      }
+    }
+
     if (effectiveRule.transform) {
       value = effectiveRule.transform(value);
     }
 
     switch (effectiveRule.type) {
       case "string":
-        value = String(value).trim();
+        // value is already trimmed above; cast to string for minLength/maxLength checks
+        value = String(value);
         if (effectiveRule.minLength !== undefined && value.length < effectiveRule.minLength) {
           throw new Error(
             `Environment variable ${key} must be at least ${effectiveRule.minLength} characters`
@@ -218,9 +235,9 @@ export class EnvValidator {
         if (typeof value === "string") {
           value = value.toLowerCase();
 
-          if (value === "true") {
+          if (value === "true" || value === "yes" || value === "1" || value === "on") {
             value = true;
-          } else if (value === "false") {
+          } else if (value === "false" || value === "no" || value === "0" || value === "off") {
             value = false;
           }
         }
@@ -250,13 +267,13 @@ export class EnvValidator {
         break;
 
       case "email":
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value))) {
+        if (!this.validateEmail(value)) {
           throw new Error("Must be a valid email");
         }
         break;
 
       case "ip":
-        if (!/^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(String(value))) {
+        if (!net.isIP(value)) {
            throw new Error("Must be a valid IP address");
         }
         break;
@@ -357,5 +374,27 @@ export class EnvValidator {
     const envName = process.env.NODE_ENV || "development";
     const envRule = rule.env?.[envName] || {};
     return { ...rule, ...envRule };
+  }
+
+
+  /*
+ * Email validation logic adapted from:
+ * Project: email-validator
+ *  * Repository: https://github.com/manishsaraan/email-validator
+ * 
+ * * Adapted to enforce email validation rules more strictly
+ */
+  private validateEmail(email: string): boolean {
+    if(!email) return false;
+
+    const emailParts = email.split("@");
+    if(emailParts.length !== 2) return false;
+
+    const [local, domain] = emailParts;
+    if(local.length > EnvValidator.LOCAL_MAX || domain.length > EnvValidator.DOMAIN_MAX) return false;
+    const domainParts = domain.split(".");
+    if(domainParts.some(part => part.length > EnvValidator.DOMAIN_PART_MAX)) return false;
+
+    return EnvValidator.EMAIL_REGEX.test(email);
   }
 }
