@@ -25,14 +25,54 @@ describe("Boolean coercion", () => {
     expect(v.validate({ ENABLED: "False" }).ENABLED).toBe(false);
   });
 
-  test("rejects non-boolean strings like 'yes'", () => {
+  test("coerces 'yes' to true", () => {
     const v = new EnvValidator(schema);
-    expect(() => v.validate({ ENABLED: "yes" })).toThrow(EnvAggregateError);
+    expect(v.validate({ ENABLED: "yes" }).ENABLED).toBe(true);
   });
 
-  test("rejects '1' as boolean", () => {
+  test("coerces 'no' to false", () => {
     const v = new EnvValidator(schema);
-    expect(() => v.validate({ ENABLED: "1" })).toThrow(EnvAggregateError);
+    expect(v.validate({ ENABLED: "no" }).ENABLED).toBe(false);
+  });
+
+  test("coerces '1' to true", () => {
+    const v = new EnvValidator(schema);
+    expect(v.validate({ ENABLED: "1" }).ENABLED).toBe(true);
+  });
+
+  test("coerces '0' to false", () => {
+    const v = new EnvValidator(schema);
+    expect(v.validate({ ENABLED: "0" }).ENABLED).toBe(false);
+  });
+
+  test("coerces 'YES' (uppercase) to true", () => {
+    const v = new EnvValidator(schema);
+    expect(v.validate({ ENABLED: "YES" }).ENABLED).toBe(true);
+  });
+
+  test("coerces 'NO' (uppercase) to false", () => {
+    const v = new EnvValidator(schema);
+    expect(v.validate({ ENABLED: "NO" }).ENABLED).toBe(false);
+  });
+
+  test("coerces 'on' to true", () => {
+    const v = new EnvValidator(schema);
+    expect(v.validate({ ENABLED: "on" }).ENABLED).toBe(true);
+  });
+
+  test("coerces 'off' to false", () => {
+    const v = new EnvValidator(schema);
+    expect(v.validate({ ENABLED: "off" }).ENABLED).toBe(false);
+  });
+
+  test("coerces 'ON' (uppercase) to true", () => {
+    const v = new EnvValidator(schema);
+    expect(v.validate({ ENABLED: "ON" }).ENABLED).toBe(true);
+  });
+
+  test("rejects unrecognised strings like 'enabled'", () => {
+    const v = new EnvValidator(schema);
+    expect(() => v.validate({ ENABLED: "enabled" })).toThrow(EnvAggregateError);
   });
 });
 

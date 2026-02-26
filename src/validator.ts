@@ -235,9 +235,9 @@ export class EnvValidator {
         if (typeof value === "string") {
           value = value.toLowerCase();
 
-          if (value === "true") {
+          if (value === "true" || value === "yes" || value === "1" || value === "on") {
             value = true;
-          } else if (value === "false") {
+          } else if (value === "false" || value === "no" || value === "0" || value === "off") {
             value = false;
           }
         }
