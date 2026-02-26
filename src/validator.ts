@@ -2,6 +2,8 @@ import { SchemaDefinition, SchemaRule } from "./schema.js";
 import { EnvAggregateError } from "./errors.js";
 import net from "net";
 
+const kValidator = Symbol.for("dotenv-gad.EnvValidator");
+
 export class EnvValidator {
   private static readonly EMAIL_REGEX =  /^[-!#$%&'*+\/0-9=?A-Z^_a-z`{|}~](\.?[-!#$%&'*+\/0-9=?A-Z^_a-z`{|}~])*@[a-zA-Z0-9](-*\.?[a-zA-Z0-9])*\.[a-zA-Z](-?[a-zA-Z0-9])+$/;
   private static readonly LOCAL_MAX = 64;
@@ -24,7 +26,18 @@ export class EnvValidator {
   constructor(
     private schema: SchemaDefinition,
     private options?: { strict?: boolean; includeRaw?: boolean; includeSensitive?: boolean }
-  ) {}
+  ) {
+    Object.defineProperty(this, kValidator, { value: true, enumerable: false });
+  }
+
+  /** Bundler-safe instanceof — checks the symbol marker, not the class name. */
+  static [Symbol.hasInstance](instance: unknown): boolean {
+    return (
+      typeof instance === "object" &&
+      instance !== null &&
+      Object.prototype.hasOwnProperty.call(instance, kValidator)
+    );
+  }
 
   validate(env: Record<string, string | undefined>) {
     this.errors = [];
@@ -370,7 +383,7 @@ export class EnvValidator {
     return value;
   }
 
-  private getEffectiveRule(key: string, rule: SchemaRule) {
+  private getEffectiveRule(_key: string, rule: SchemaRule) {
     const envName = process.env.NODE_ENV || "development";
     const envRule = rule.env?.[envName] || {};
     return { ...rule, ...envRule };
@@ -398,3 +411,9 @@ export class EnvValidator {
     return EnvValidator.EMAIL_REGEX.test(email);
   }
 }
+
+Object.defineProperty(EnvValidator, "name", {
+  value: "EnvValidator",
+  configurable: true,
+  writable: false,
+});

@@ -1,10 +1,9 @@
 import { EnvValidator } from "./validator.js";
 import { defineSchema, SchemaDefinition, SchemaRule } from "./schema.js";
 import { EnvAggregateError, AggregateError, EnvValidationError } from "./errors.js";
-import { loadEnv, createEnvProxy } from "./utils.js";
+import { loadEnv, createEnvProxy, readEnvFile } from "./utils.js";
 import { composeSchema } from "./compose.js";
 import { ExtractEnv, InferEnv } from "./types.js";
-import dotenv from "dotenv";
 
 export {
   defineSchema,
@@ -23,7 +22,7 @@ export function validateEnv(
   schema: SchemaDefinition,
   options?: { strict?: boolean; path?: string }
 ) {
-  const fileEnv = dotenv.config({ debug: false, path: options?.path }).parsed || {};
+  const fileEnv = readEnvFile(options?.path);
   const env = { ...process.env, ...fileEnv };
   const validator = new EnvValidator(schema, options);
   return validator.validate(env);
