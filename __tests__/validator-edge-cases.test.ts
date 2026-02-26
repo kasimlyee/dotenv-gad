@@ -195,10 +195,16 @@ describe("IP validation", () => {
     );
   });
 
-  test("rejects IPv6 (only IPv4 supported)", () => {
+  test("accepts valid IPv6 loopback (::1)", () => {
     const schema = defineSchema({ IP: { type: "ip", required: true } });
     const v = new EnvValidator(schema);
-    expect(() => v.validate({ IP: "::1" })).toThrow(EnvAggregateError);
+    expect(v.validate({ IP: "::1" })).toMatchObject({ IP: "::1" });
+  });
+
+  test("accepts full IPv6 address", () => {
+    const schema = defineSchema({ IP: { type: "ip", required: true } });
+    const v = new EnvValidator(schema);
+    expect(v.validate({ IP: "2001:db8::1" })).toMatchObject({ IP: "2001:db8::1" });
   });
 });
 

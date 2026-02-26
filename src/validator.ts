@@ -1,5 +1,6 @@
 import { SchemaDefinition, SchemaRule } from "./schema.js";
 import { EnvAggregateError } from "./errors.js";
+import net from "net";
 
 export class EnvValidator {
   private static readonly EMAIL_REGEX =  /^[-!#$%&'*+\/0-9=?A-Z^_a-z`{|}~](\.?[-!#$%&'*+\/0-9=?A-Z^_a-z`{|}~])*@[a-zA-Z0-9](-*\.?[a-zA-Z0-9])*\.[a-zA-Z](-?[a-zA-Z0-9])+$/;
@@ -183,13 +184,24 @@ export class EnvValidator {
       return effectiveRule.default;
     }
 
+    if (typeof value === "string") {
+      value = value.trim();
+      // Re-check emptiness after trim in case the value was only whitespace
+      if (value === "") {
+        if (effectiveRule.required)
+          throw new Error(`Missing required environment variable`);
+        return effectiveRule.default;
+      }
+    }
+
     if (effectiveRule.transform) {
       value = effectiveRule.transform(value);
     }
 
     switch (effectiveRule.type) {
       case "string":
-        value = String(value).trim();
+        // value is already trimmed above; cast to string for minLength/maxLength checks
+        value = String(value);
         if (effectiveRule.minLength !== undefined && value.length < effectiveRule.minLength) {
           throw new Error(
             `Environment variable ${key} must be at least ${effectiveRule.minLength} characters`
@@ -261,7 +273,7 @@ export class EnvValidator {
         break;
 
       case "ip":
-        if (!/^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(String(value))) {
+        if (!net.isIP(value)) {
            throw new Error("Must be a valid IP address");
         }
         break;
