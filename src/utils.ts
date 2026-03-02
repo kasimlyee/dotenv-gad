@@ -42,6 +42,7 @@ export function loadEnv<S extends SchemaDefinition>(
     includeSensitive?: boolean;
     path?: string;
     allowPlaintext?: boolean;
+    keysPath?: string;
   }
 ): InferEnv<S> {
   const fileEnv = readEnvFile(options?.path);

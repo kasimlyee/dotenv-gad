@@ -170,6 +170,7 @@ export default function (_program: Command) {
           updatedEnvContent = updatedEnvContent.replace(replaceRegexes[key], `$1${value}`);
         }
 
+        copyFileSync(envPath, `${envPath}.bak`);
         writeFileSync(envPath, updatedEnvContent);
 
         // Update .env.keys — keep old key as ENVGAD_PRIVATE_KEY_OLD
@@ -194,6 +195,7 @@ export default function (_program: Command) {
             `${chalk.green("✓")} New public key written to ${chalk.bold(envPath)}\n` +
             `${chalk.green("✓")} New private key written to ${chalk.bold(keysPath)}\n` +
             `${chalk.dim(`✓ Previous private key preserved as ENVGAD_PRIVATE_KEY_OLD in ${keysPath}`)}\n` +
+            chalk.dim(`✓ Backup of old ${envPath} saved as ${envPath}.bak\n`) +
             (existsSync(`${keysPath}.bak`)
               ? chalk.dim(`✓ Backup of old ${keysPath} saved as ${keysPath}.bak\n`)
               : "") +

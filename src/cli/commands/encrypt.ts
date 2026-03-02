@@ -1,7 +1,7 @@
 import { Command } from "commander";
 import chalk from "chalk";
 import ora from "ora";
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync, copyFileSync } from "node:fs";
 import dotenv from "dotenv";
 import { encryptEnvValue, isEncryptedValue } from "../../crypto.js";
 import { EncryptionKeyMissingError } from "../../errors.js";
@@ -96,9 +96,11 @@ export default function (_program: Command) {
         }
 
         if (encryptedCount > 0) {
+          copyFileSync(envPath, `${envPath}.bak`);
           writeFileSync(envPath, updatedContent);
           console.log(
-            `\n${chalk.green("✓")} ${encryptedCount} field(s) encrypted in ${chalk.bold(envPath)}`
+            `\n${chalk.green("✓")} ${encryptedCount} field(s) encrypted in ${chalk.bold(envPath)}\n` +
+              chalk.dim(`  Backup saved to ${envPath}.bak`)
           );
         } else {
           console.log(chalk.dim("\nNo fields needed encryption."));

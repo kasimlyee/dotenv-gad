@@ -23,7 +23,7 @@ const HKDF_INFO = Buffer.from("dotenv-gad:v1");
 const HKDF_SALT = Buffer.alloc(0); 
 const AAD_PREFIX = "dotenv-gad:v1:";
 
-// Exact byte lengths for stored key formats (DER-encoded)
+
 const PRIVATE_KEY_HEX_LENGTH = 96; 
 const PUBLIC_KEY_HEX_LENGTH = 88;  
 
@@ -220,7 +220,15 @@ export function loadPrivateKey(options: { keysPath?: string } = {}): string | nu
   if (existsSync(keysPath)) {
     const content = readFileSync(keysPath, "utf8");
     const match = content.match(/^ENVGAD_PRIVATE_KEY=([a-fA-F0-9]+)/m);
-    if (match) return match[1];
+    if (match) {
+      const key = match[1];
+      if (key.length !== PRIVATE_KEY_HEX_LENGTH) {
+        throw new Error(
+          `Invalid ENVGAD_PRIVATE_KEY in ${keysPath}: expected ${PRIVATE_KEY_HEX_LENGTH}-char hex-encoded PKCS8 DER, got ${key.length} chars`
+        );
+      }
+      return key;
+    }
   }
 
   const envKey = process.env.ENVGAD_PRIVATE_KEY;
