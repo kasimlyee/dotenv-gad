@@ -1,0 +1,16 @@
+{
+  "name": "dotenv-gad-encryption-example",
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "keygen": "npx dotenv-gad keygen",
+    "encrypt": "npx dotenv-gad --schema env.schema.js encrypt",
+    "decrypt": "npx dotenv-gad --schema env.schema.js decrypt",
+    "status": "npx dotenv-gad --schema env.schema.js status",
+    "verify": "npx dotenv-gad --schema env.schema.js verify"
+  },
+  "dependencies": {
+    "dotenv-gad": "file:../.."
+  }
+}
