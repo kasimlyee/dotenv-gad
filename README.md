@@ -12,10 +12,11 @@
 
 - Type-safe environment variables with full IntelliSense
 - Schema validation (string, number, boolean, url, email, ip, port, json, array, object)
+- **At-rest encryption** —  transparent decrypt at runtime
 - Schema composition for modular configs
 - Automatic documentation and `.env.example` generation
 - First-class TypeScript support
-- CLI tooling (check, sync, types, init, fix, docs)
+- CLI tooling (check, sync, types, init, fix, docs, keygen, encrypt, decrypt, rotate, verify, status)
 - Sensitive value management and redaction
 - Vite plugin with client-safe filtering and HMR
 
@@ -70,18 +71,25 @@ Full documentation is available at [kasimlyee.github.io/dotenv-gad](https://kasi
 
 ## CLI Commands
 
-| Command | Description                        |
-| ------- | ---------------------------------- |
-| `check` | Validate .env against schema       |
-| `sync`  | Generate/update .env.example       |
-| `types` | Generate env.d.ts TypeScript types |
-| `init`  | Create starter schema              |
-| `fix`   | Fixes environment issues           |
-| `docs`  | Generates .env documentation       |
+| Command   | Description                                      |
+| --------- | ------------------------------------------------ |
+| `check`   | Validate .env against schema                     |
+| `sync`    | Generate/update .env.example                     |
+| `types`   | Generate env.d.ts TypeScript types               |
+| `init`    | Create starter schema                            |
+| `fix`     | Fix environment issues interactively             |
+| `docs`    | Generate .env documentation                      |
+| `keygen`  | Generate an X25519 key pair for encryption       |
+| `encrypt` | Encrypt plaintext values for `encrypted:true` fields |
+| `decrypt` | Print or write back decrypted values             |
+| `rotate`  | Rotate keys: decrypt → new pair → re-encrypt     |
+| `status`  | Show encryption status of each schema field      |
+| `verify`  | Dry-run: confirm all encrypted values decrypt    |
 
 ```bash
 npx dotenv-gad check
-npx dotenv-gad types
+npx dotenv-gad keygen
+npx dotenv-gad encrypt
 ```
 
 ## Vite Plugin
@@ -177,6 +185,35 @@ const schema = composeSchema(baseSchema, dbSchema);
   }
 }
 ```
+
+### At-rest Encryption
+
+Store secrets as encrypted ciphertext in `.env` using asymmetric X25519 + ChaCha20-Poly1305. Only `.env.keys` (gitignored) can decrypt them.
+
+**1. Mark fields as encrypted:**
+
+```typescript
+export default defineSchema({
+  DATABASE_URL: { type: 'string', required: true, sensitive: true, encrypted: true },
+  API_SECRET:   { type: 'string', required: true, sensitive: true, encrypted: true },
+});
+```
+
+**2. Generate keys and encrypt:**
+
+```bash
+npx dotenv-gad keygen    # writes ENVGAD_PUBLIC_KEY to .env, creates .env.keys
+npx dotenv-gad encrypt   # replaces plaintext secrets with encrypted:v1:… tokens
+```
+
+**3. `loadEnv` decrypts transparently at runtime:**
+
+```typescript
+const env = loadEnv(schema); // reads .env.keys, decrypts, validates — all in one step
+console.log(env.DATABASE_URL); // "postgres://user:pass@host/db"
+```
+
+Your `.env` (with encrypted values and the public key) is now safe to commit. See the [Encryption guide](https://kasimlyee.github.io/dotenv-gad/guide/encryption) for key rotation, CI/CD setup, and security details.
 
 ### Grouping / Namespaced Envs
 

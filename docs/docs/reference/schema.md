@@ -9,6 +9,7 @@ The schema is a `Record<string, SchemaRule>` where `SchemaRule` includes the fol
 - `validate` — `(value) => boolean` custom validator
 - `transform` — `(value) => any` value transform
 - `sensitive` — boolean; when true this value is masked in errors and excluded from `.env.example`
+- `encrypted` — boolean; when true the value must be stored as an `encrypted:v1:…` token (see [Encryption](../guide/encryption.md))
 - `docs` — string documentation
 - `enum` — array of allowed values
 - `regex` / `regexError`
