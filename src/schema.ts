@@ -20,6 +20,13 @@ export interface SchemaRule {
   validate?: (value: any) => boolean;
   transform?: (value: any) => any;
   sensitive?: boolean;
+  /**
+   * When true, the value must be stored encrypted in the .env file using the
+   * dotenv-gad ECIES scheme. The validator will automatically decrypt the value
+   * before type-checking and returning it to the application.
+   * Use `npx dotenv-gad keygen` and `npx dotenv-gad encrypt` to manage keys.
+   */
+  encrypted?: boolean;
   docs?: string;
   enum?: any[];
   regex?: RegExp;

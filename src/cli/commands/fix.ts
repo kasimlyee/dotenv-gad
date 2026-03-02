@@ -1,14 +1,24 @@
 import { Command } from "commander";
 import chalk from "chalk";
-import inquirer from "inquirer";
+import { createInterface } from "node:readline/promises";
 import { loadSchema, applyFix } from "./utils.js";
 import { validateEnv } from "../../index.js";
 import { EnvAggregateError } from "../../errors.js";
 
-export default function (program: Command) {
+async function confirm(question: string): Promise<boolean> {
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    const answer = await rl.question(question);
+    return answer.trim().toLowerCase() === "y";
+  } finally {
+    rl.close();
+  }
+}
+
+export default function (_program: Command) {
   return new Command("fix")
     .description("Interactively fix environment issues")
-    .action(async (options, command) => {
+    .action(async (_options, command) => {
       const rootOpts = command.parent.opts();
       const schema = await loadSchema(rootOpts.schema);
       const envPath = rootOpts.env || ".env";
@@ -28,21 +38,16 @@ export default function (program: Command) {
             }
           });
 
-          const { confirmed } = await inquirer.prompt({
-            type: "confirm",
-            name: "confirmed",
-            message: `\nWould you like to fix these issues interactively?`,
-            default: true,
-          });
+          const ok = await confirm(
+            chalk.bold("\nWould you like to fix these issues interactively? (y/N): ")
+          );
 
-          if (confirmed) {
-            // Convert errors array to issues object format expected by applyFix
+          if (ok) {
             const issues: Record<string, any> = {};
             error.errors.forEach((e) => {
               issues[e.key] = { value: e.value, key: e.key };
             });
-
-            await applyFix(issues, schema, rootOpts.env || ".env");
+            await applyFix(issues, schema, envPath);
           } else {
             console.log(chalk.dim("\nFix cancelled."));
             process.exit(1);

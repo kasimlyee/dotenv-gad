@@ -19,22 +19,31 @@ export function readEnvFile(path?: string): Record<string, string> {
   }
 }
 
+
 /**
- * Loads environment variables from .env file and validates them against
- * the given schema.
+ * Loads environment variables from a `.env` file (if present) and validates them
+ * against the provided schema.
  *
- * @template S The type of the schema definition.
- * @param {S} schema The schema definition for the environment variables.
- * @param {Object} [options] Optional options for the validation process.
- * @param {boolean} [options.strict] When true, fail on environment variables not present in the schema.
- * @param {boolean} [options.includeRaw] Include raw values in error reports (non-sensitive by default).
- * @param {boolean} [options.includeSensitive] When used with `includeRaw`, will reveal values marked sensitive (use only for local debugging).
- * @param {string} [options.path] Path to the .env file to load (defaults to `.env` in cwd).
- * @returns {InferEnv<S>} The validated environment variables.
+ * @param schema The schema definition for the environment variables.
+ * @param options Optional options for the validation process.
+ * @param options.strict When true, environment variables not present in the schema will be rejected.
+ * @param options.includeRaw When true, include raw values in error reports (non-sensitive by default).
+ * @param options.includeSensitive When true, include values marked sensitive in error reports (use only for local debugging).
+ * @param options.path Path to the `.env` file (defaults to `.env` in cwd).
+ * @param options.allowPlaintext When true, fields with `encrypted: true` that have plaintext values emit a warning instead of an error.
+ * @param options.keysPath Path to the `.env.keys` file containing ENVGAD_PRIVATE_KEY (default: `.env.keys`).
+ * @returns The validated environment variables, typed according to the schema.
  */
 export function loadEnv<S extends SchemaDefinition>(
   schema: S,
-  options?: { strict?: boolean; includeRaw?: boolean; includeSensitive?: boolean; path?: string }
+  options?: {
+    strict?: boolean;
+    includeRaw?: boolean;
+    includeSensitive?: boolean;
+    path?: string;
+    allowPlaintext?: boolean;
+    keysPath?: string;
+  }
 ): InferEnv<S> {
   const fileEnv = readEnvFile(options?.path);
   const env = { ...process.env, ...fileEnv };

@@ -16,6 +16,7 @@ Use the sidebar to navigate. Below are quick links:
 - [Error Handling](guide/errors.md)
 - [Grouping / Namespaces](guide/grouping.md)
 - [Schema Composition](guide/compose.md)
+- [Encryption](guide/encryption.md)
 - [Vite Plugin](examples/vite.md)
 - [CLI](cli.mdx)
 

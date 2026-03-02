@@ -2,13 +2,19 @@ import { Command } from "commander";
 import chalk from "chalk";
 import ora from "ora";
 import { writeFileSync, existsSync } from "fs";
-import inquirer from "inquirer";
-import { dirname, join } from "path";
-import { fileURLToPath } from "url";
+import { createInterface } from "node:readline/promises";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+async function confirm(question: string): Promise<boolean> {
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    const answer = await rl.question(question);
+    return answer.trim().toLowerCase() === "y";
+  } finally {
+    rl.close();
+  }
+}
 
-export default function (program: Command) {
+export default function (_program: Command) {
   return new Command("init")
     .description("Initialize new schema file")
     .option("--force", "Overwrite existing files")
@@ -18,13 +24,14 @@ export default function (program: Command) {
 
       if (existsSync(schemaPath)) {
         if (!options.force) {
-          const { overwrite } = await inquirer.prompt({
-            type: "confirm",
-            name: "overwrite",
-            message: "Schema file already exists. Overwrite?",
-            default: false,
-          });
-          if (!overwrite) process.exit(0);
+          const ok = await confirm(
+            chalk.yellow(`Schema file "${schemaPath}" already exists. Overwrite? (y/N): `)
+          );
+          if (!ok) {
+            console.log(chalk.dim("\nAborted."));
+            process.exit(0);
+          }
+          console.log();
         }
       }
 
@@ -55,9 +62,7 @@ export default defineSchema({
 
         writeFileSync(schemaPath, template);
         spinner.succeed(chalk.green(`Created ${schemaPath} successfully!`));
-        console.log(
-          chalk.dim("\nEdit this file to define your environment schema")
-        );
+        console.log(chalk.dim("\nEdit this file to define your environment schema"));
       } catch (error) {
         spinner.fail(chalk.red("Failed to create schema file"));
         console.error(error);

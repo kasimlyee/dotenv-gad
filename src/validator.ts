@@ -1,5 +1,6 @@
 import { SchemaDefinition, SchemaRule } from "./schema.js";
-import { EnvAggregateError } from "./errors.js";
+import { EnvAggregateError, EncryptionKeyMissingError } from "./errors.js";
+import { decryptEnvValue, isEncryptedValue, loadPrivateKey } from "./crypto.js";
 import net from "net";
 
 const kValidator = Symbol.for("dotenv-gad.EnvValidator");
@@ -22,11 +23,19 @@ export class EnvValidator {
    * @param {SchemaDefinition} schema The schema definition for the environment variables.
    * @param {Object} [options] Optional options for the validation process.
    * @param {boolean} [options.strict] When true, environment variables not present in the schema will be rejected.
+   * @param {boolean} [options.allowPlaintext] When true, fields with `encrypted: true` that have plaintext values emit a warning instead of an error. Useful for gradual migration.
+   * @param {string} [options.keysPath] Path to the `.env.keys` file (default: `.env.keys`).
    */
   constructor(
     private schema: SchemaDefinition,
-    private options?: { strict?: boolean; includeRaw?: boolean; includeSensitive?: boolean }
-  ) {
+    private options?: {
+      strict?: boolean;
+      includeRaw?: boolean;
+      includeSensitive?: boolean;
+      allowPlaintext?: boolean;
+      keysPath?: string;
+    }
+  )  {
     Object.defineProperty(this, kValidator, { value: true, enumerable: false });
   }
 
@@ -41,6 +50,9 @@ export class EnvValidator {
 
   validate(env: Record<string, string | undefined>) {
     this.errors = [];
+
+    // First Decrypt encrypted fields and check for schema/value mismatches.
+    const { processedEnv, skipKeys } = this.preprocessEncryption(env);
 
     const result: Record<string, any> = {};
 
@@ -58,32 +70,34 @@ export class EnvValidator {
       }
     }
 
-    const envKeys = Object.keys(env);
+    const envKeys = Object.keys(processedEnv);
     for (let i = 0; i < envKeys.length; i++) {
       const eKey = envKeys[i];
       for (let j = 0; j < prefixes.length; j++) {
         const { key, prefix } = prefixes[j];
         if (eKey.startsWith(prefix)) {
           const subKey = eKey.slice(prefix.length);
-          groupedEnv[key][subKey] = env[eKey];
+          groupedEnv[key][subKey] = processedEnv[eKey];
         }
       }
     }
 
-    // Micro-optimization: avoid creating intermediate arrays from Object.entries
     const schemaKeys = Object.keys(this.schema);
     for (let i = 0; i < schemaKeys.length; i++) {
       const key = schemaKeys[i];
       const rule = this.schema[key];
+
+      // Keys that already have a preprocessing error (encryption mismatch, decryption failure, etc.) get skipped
+      if (skipKeys.has(key)) continue;
+
       try {
         // If we have grouped values for this key use them (preferred over JSON string)
         const valToValidate = groupedEnv[key] && Object.keys(groupedEnv[key]).length > 0
           ? groupedEnv[key]
-          : env[key];
+          : processedEnv[key];
 
         // If both grouped and a top-level JSON value exist, prefer grouped and warn
-        if (groupedEnv[key] && Object.keys(groupedEnv[key]).length > 0 && env[key] !== undefined) {
-          
+        if (groupedEnv[key] && Object.keys(groupedEnv[key]).length > 0 && processedEnv[key] !== undefined) {
           console.warn(`Both prefixed variables and top-level ${key} exist; prefixed vars are used`);
         }
 
@@ -110,16 +124,16 @@ export class EnvValidator {
           // - includeRaw: include raw values for non-sensitive fields
           // - includeSensitive: when used with includeRaw, include raw sensitive values too (use with caution)
           let displayedValue: any;
-          if (env[key] === undefined) {
+          if (processedEnv[key] === undefined) {
             displayedValue = undefined;
           } else if (this.options?.includeRaw) {
             if (rule.sensitive && !this.options?.includeSensitive) {
               displayedValue = "****";
             } else {
-              displayedValue = env[key];
+              displayedValue = processedEnv[key];
             }
           } else {
-            displayedValue = this.redactValue(env[key], rule.sensitive);
+            displayedValue = this.redactValue(processedEnv[key], rule.sensitive);
           }
 
           this.errors.push({
@@ -161,7 +175,17 @@ export class EnvValidator {
     return result;
   }
 
-  // Redact or trim sensitive values for error reporting
+  /**
+   * Redacts a value to hide its contents, following these rules:
+   * - If `value` is undefined, returns undefined.
+   * - If `sensitive` is true, returns `"****"`.
+   * - If `value` is not a string, returns the original value.
+   * - If `value` is a string longer than 64 characters, truncates it to 4 characters
+   *   at the start and end, and replaces the middle with `"..."`.
+   * - Otherwise, returns the original string.
+   * @param value The value to redact.
+   * @param sensitive If true, redacts the value to `"****"`.
+   */
   private redactValue(value: any, sensitive?: boolean) {
     if (value === undefined) return undefined;
     if (sensitive) return "****";
@@ -172,8 +196,17 @@ export class EnvValidator {
     return value;
   }
 
-  // Try to quickly determine if a string *might* be JSON before parsing to avoid
-  // costly exceptions in the hot path for clearly non-JSON values.
+
+  /**
+   * Tries to parse the given value as a JSON object.
+   * Returns `{ ok: true, value: JSON.parse(s) }` if successful,
+   * or `{ ok: false }` if not.
+   * The following conditions will cause the function to return `{ ok: false }`:
+   * - `value` is not a string
+   * - `value` is an empty string
+   * - `value` does not start with one of the following characters: `{`, `[`, `"`, `t`, `f`, `n`, or a digit
+   * - `value` cannot be parsed as a JSON object
+   */
   private tryParseJSON(value: any) {
     if (typeof value !== "string") return { ok: false } as const;
     const s = value.trim();
@@ -390,6 +423,89 @@ export class EnvValidator {
   }
 
 
+  
+  /**
+   * Preprocesses environment variables to detect and handle encrypted values.
+   *   1. Decrypts any encrypted values using the private key.
+   *   2. Checks if any plaintext values are present for fields that should be encrypted.
+   *   3. Flags any env value that looks encrypted but the schema doesn't declare encrypted: true.
+   * @returns An object containing the processed environment variables and a set of keys that were skipped due to errors.
+   */
+  private preprocessEncryption(env: Record<string, string | undefined>): {
+    processedEnv: Record<string, string | undefined>;
+    skipKeys: Set<string>;
+  } {
+    const processedEnv: Record<string, string | undefined> = { ...env };
+    const skipKeys = new Set<string>();
+
+    const encryptedSchemaKeys = Object.keys(this.schema).filter(
+      (k) => this.schema[k].encrypted
+    );
+
+    if (encryptedSchemaKeys.length > 0) {
+      // Only load the private key when at least one value is already encrypted
+      const needsDecryption = encryptedSchemaKeys.some(
+        (k) => processedEnv[k] != null && processedEnv[k] !== "" && isEncryptedValue(processedEnv[k]!)
+      );
+
+      let privateKeyHex: string | null = null;
+      if (needsDecryption) {
+        privateKeyHex = loadPrivateKey({ keysPath: this.options?.keysPath });
+        if (!privateKeyHex) {
+          throw new EncryptionKeyMissingError("decryption");
+        }
+      }
+
+      for (const key of encryptedSchemaKeys) {
+        const value = processedEnv[key];
+        if (value == null || value === "") continue; // handled by required check in main loop
+
+        if (isEncryptedValue(value)) {
+          try {
+            processedEnv[key] = decryptEnvValue(value, privateKeyHex!, key);
+          } catch (err) {
+            this.errors.push({
+              key,
+              message: err instanceof Error ? err.message : "Decryption failed",
+              rule: this.schema[key],
+            });
+            skipKeys.add(key);
+          }
+        } else {
+          // Plaintext value for a field that should be encrypted
+          if (this.options?.allowPlaintext) {
+            console.warn(
+              `[dotenv-gad] "${key}" has a plaintext value but schema declares encrypted: true. ` +
+                "Run: npx dotenv-gad encrypt"
+            );
+          } else {
+            this.errors.push({
+              key,
+              message:
+                'Must be encrypted. Run: npx dotenv-gad encrypt',
+              rule: this.schema[key],
+            });
+            skipKeys.add(key);
+          }
+        }
+      }
+    }
+
+    // Flag any env value that looks encrypted but the schema doesn't declare encrypted: true
+    for (const [eKey, value] of Object.entries(processedEnv)) {
+      if (skipKeys.has(eKey)) continue;
+      if (value && isEncryptedValue(value) && !this.schema[eKey]?.encrypted) {
+        this.errors.push({
+          key: eKey,
+          message: "Encrypted value found but schema does not declare encrypted: true",
+        });
+        skipKeys.add(eKey);
+      }
+    }
+
+    return { processedEnv, skipKeys };
+
+  }
   /*
  * Email validation logic adapted from:
  * Project: email-validator

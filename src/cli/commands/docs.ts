@@ -2,10 +2,10 @@ import { Command } from "commander";
 import { loadSchema } from "./utils.js";
 import { writeFileSync } from "fs";
 
-export default function (program: Command) {
+export default function (_program: Command) {
   return new Command("docs")
     .description("Generate Markdown documentation")
-    .action(async (program, command) => {
+    .action(async (_program, command) => {
       const schema = await loadSchema(command.parent.opts().schema);
       let md = `# Environment Variables\n\n`;
 

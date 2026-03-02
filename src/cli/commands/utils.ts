@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync } from "fs";
+import { createInterface } from "node:readline/promises";
 import { SchemaDefinition } from "../../schema.js";
 import Chalk from "chalk";
-import inquirer from "inquirer";
 
 // Re-export from the standalone schema loader (no CLI-only deps)
 export { loadSchema } from "../../schema-loader.js";
@@ -23,42 +23,45 @@ export async function applyFix(
   envPath: string = ".env"
 ): Promise<void> {
   const envLines = readFileSync(envPath, "utf-8").split("\n");
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
 
-  for (const key in issues) {
-    if (!Object.prototype.hasOwnProperty.call(issues, key)) continue;
-    const issue = issues[key];
-    const rule = schema[key];
+  try {
+    for (const key in issues) {
+      if (!Object.prototype.hasOwnProperty.call(issues, key)) continue;
 
-    if (!rule) {
-      console.error(
-        Chalk.red(`Error: Could not find rule for key ${key} in schema`)
-      );
-      continue;
-    }
+      const rule = schema[key];
+      if (!rule) {
+        console.error(Chalk.red(`Error: Could not find rule for key ${key} in schema`));
+        continue;
+      }
 
-    const { value } = await inquirer.prompt({
-      type: "input",
-      name: "value",
-      message: `${Chalk.yellow(key)} (${rule.docs || "No description"})`,
-      default: rule.default !== undefined ? String(rule.default) : "",
-      validate: (input) => {
+      const defaultValue = rule.default !== undefined ? String(rule.default) : "";
+      const hint = defaultValue ? Chalk.dim(` [${defaultValue}]`) : "";
+      const prompt = `${Chalk.yellow(key)} (${rule.docs || "No description"})${hint}: `;
+
+      let input: string;
+      while (true) {
+        const answer = await rl.question(prompt);
+        input = answer.trim() || defaultValue;
         if (rule.required && !input) {
-          return "Value is required";
+          console.log(Chalk.red("  Value is required"));
+          continue;
         }
-        return true;
-      },
-    });
+        break;
+      }
 
-    // Sanitize: strip newlines and carriage returns to prevent .env injection
-    const sanitized = String(value).replace(/[\r\n]/g, "");
+      // Sanitize: strip newlines and carriage returns to prevent .env injection
+      const sanitized = input.replace(/[\r\n]/g, "");
 
-    const lineIndex = envLines.findIndex((line) => line.startsWith(`${key}=`));
-
-    if (lineIndex >= 0) {
-      envLines[lineIndex] = `${key}=${sanitized}`;
-    } else {
-      envLines.push(`${key}=${sanitized}`);
+      const lineIndex = envLines.findIndex((line) => line.startsWith(`${key}=`));
+      if (lineIndex >= 0) {
+        envLines[lineIndex] = `${key}=${sanitized}`;
+      } else {
+        envLines.push(`${key}=${sanitized}`);
+      }
     }
+  } finally {
+    rl.close();
   }
 
   writeFileSync(envPath, envLines.join("\n"));
