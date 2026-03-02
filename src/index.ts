@@ -19,7 +19,7 @@ import {
   loadPrivateKey,
 } from "./crypto.js";
 import type { KeyPair } from "./crypto.js";
-import dotenv from "dotenv";
+import { readEnvFile } from "./utils.js";
 
 export {
   defineSchema,
@@ -51,7 +51,7 @@ export function validateEnv(
     keysPath?: string;
   }
 ) {
-  const fileEnv = dotenv.config({ debug: false, path: options?.path }).parsed || {};
+  const fileEnv = readEnvFile(options?.path);
   const env = { ...process.env, ...fileEnv };
   const validator = new EnvValidator(schema, options);
   return validator.validate(env);
