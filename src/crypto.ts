@@ -233,6 +233,7 @@ export function loadPrivateKey(options: { keysPath?: string } = {}): string | nu
 
   const envKey = process.env.ENVGAD_PRIVATE_KEY;
   if (envKey) {
+    delete process.env.ENVGAD_PRIVATE_KEY;
     if (!/^[a-fA-F0-9]+$/.test(envKey) || envKey.length !== PRIVATE_KEY_HEX_LENGTH) {
       throw new Error(
         `Invalid ENVGAD_PRIVATE_KEY format (expected ${PRIVATE_KEY_HEX_LENGTH}-char hex-encoded PKCS8 DER, got ${envKey.length} chars)`

@@ -10,7 +10,8 @@ import { loadSchema } from "./utils.js";
 export default function (_program: Command) {
   return new Command("encrypt")
     .description("Encrypt plaintext values for fields marked encrypted: true in the schema")
-    .action(async (_opts, command) => {
+    .option("--no-backup", "Skip creating a plaintext .env.bak backup file")
+    .action(async (opts, command) => {
       const rootOpts = command.parent.opts();
       const envPath: string = rootOpts.env ?? ".env";
       const schemaPath: string = rootOpts.schema ?? "env.schema.ts";
@@ -96,11 +97,16 @@ export default function (_program: Command) {
         }
 
         if (encryptedCount > 0) {
-          copyFileSync(envPath, `${envPath}.bak`);
+          if (opts.backup !== false) {
+            copyFileSync(envPath, `${envPath}.bak`);
+          }
           writeFileSync(envPath, updatedContent);
+          const backupNote = opts.backup !== false
+            ? chalk.yellow(`  ⚠ Backup ${envPath}.bak contains plaintext secrets — delete it after verifying.`)
+            : chalk.dim(`  No backup created (--no-backup).`);
           console.log(
             `\n${chalk.green("✓")} ${encryptedCount} field(s) encrypted in ${chalk.bold(envPath)}\n` +
-              chalk.dim(`  Backup saved to ${envPath}.bak`)
+              backupNote
           );
         } else {
           console.log(chalk.dim("\nNo fields needed encryption."));

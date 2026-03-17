@@ -53,11 +53,18 @@ export async function applyFix(
       // Sanitize: strip newlines and carriage returns to prevent .env injection
       const sanitized = input.replace(/[\r\n]/g, "");
 
+      // Quote the value if it contains characters with special meaning in .env files
+      // (#  starts a comment, leading/trailing spaces are stripped without quotes)
+      const needsQuoting = /[#"\\]/.test(sanitized) || sanitized !== sanitized.trim();
+      const envValue = needsQuoting
+        ? `"${sanitized.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`
+        : sanitized;
+
       const lineIndex = envLines.findIndex((line) => line.startsWith(`${key}=`));
       if (lineIndex >= 0) {
-        envLines[lineIndex] = `${key}=${sanitized}`;
+        envLines[lineIndex] = `${key}=${envValue}`;
       } else {
-        envLines.push(`${key}=${sanitized}`);
+        envLines.push(`${key}=${envValue}`);
       }
     }
   } finally {
