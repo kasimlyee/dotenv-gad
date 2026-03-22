@@ -14,7 +14,9 @@ export function readEnvFile(path?: string): Record<string, string> {
   if (!existsSync(filePath)) return {};
   try {
     return parseEnv(readFileSync(filePath, "utf-8"));
-  } catch {
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.warn(`[dotenv-gad] Failed to parse ${filePath}: ${message}`);
     return {};
   }
 }

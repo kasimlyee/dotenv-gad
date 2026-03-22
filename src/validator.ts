@@ -6,7 +6,7 @@ import net from "net";
 const kValidator = Symbol.for("dotenv-gad.EnvValidator");
 
 export class EnvValidator {
-  private static readonly EMAIL_REGEX =  /^[-!#$%&'*+\/0-9=?A-Z^_a-z`{|}~](\.?[-!#$%&'*+\/0-9=?A-Z^_a-z`{|}~])*@[a-zA-Z0-9](-*\.?[a-zA-Z0-9])*\.[a-zA-Z](-?[a-zA-Z0-9])+$/;
+  private static readonly EMAIL_REGEX = /^[-!#$%&'*+\/0-9=?A-Z^_a-z`{|}~](\.?[-!#$%&'*+\/0-9=?A-Z^_a-z`{|}~])*@[a-zA-Z0-9](-?\.?[a-zA-Z0-9])*\.[a-zA-Z](-?[a-zA-Z0-9])+$/;
   private static readonly LOCAL_MAX = 64;
   private static readonly DOMAIN_MAX = 255;
   private static readonly DOMAIN_PART_MAX = 63;

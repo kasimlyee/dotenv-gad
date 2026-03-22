@@ -44,7 +44,7 @@ async function loadTsModule(tsFilePath: string): Promise<SchemaDefinition> {
       loader: "ts",
       target: "esnext",
     });
-    writeFileSync(tempFile, code);
+    writeFileSync(tempFile, code, { mode: 0o600 });
     return await importModule(tempFile);
   } finally {
     if (existsSync(tempFile)) {
