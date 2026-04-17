@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # Introduction
 
-**dotenv-gad** is an environment variable validation library that brings type safety, schema validation, and runtime checks to Node.js and modern JavaScript applications.
+**dotenv-gad** is an environment variable validation library that brings type safety, schema validation, and runtime checks to Node.js, Bun, and modern JavaScript applications.
 
 It works with any environment variable source — `.env` files, platform dashboards (Vercel, Railway, Docker), CI/CD pipelines, or `process.env` directly. Define a schema once, and dotenv-gad ensures your app always starts with valid, typed configuration.
 

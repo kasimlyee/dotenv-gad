@@ -1,1 +1,6 @@
-npm test
+#!/usr/bin/env sh
+if command -v bun >/dev/null 2>&1; then
+  bun test
+else
+  npm test
+fi

@@ -4,6 +4,8 @@ Install:
 
 ```bash
 npm install dotenv-gad
+# or
+bun add dotenv-gad
 ```
 
 Define a schema (`env.schema.ts`):
@@ -50,6 +52,6 @@ const env = validator.validate(process.env);
 
 ## CLI
 
-- `npx dotenv-gad check` — check .env against the schema
-- `npx dotenv-gad sync` — generate/update `.env.example`
-- `npx dotenv-gad types` — generate `env.d.ts`
+- `npx dotenv-gad check` (or `bunx dotenv-gad check`) — check .env against the schema
+- `npx dotenv-gad sync` (or `bunx dotenv-gad sync`) — generate/update `.env.example`
+- `npx dotenv-gad types` (or `bunx dotenv-gad types`) — generate `env.d.ts`

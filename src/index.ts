@@ -20,6 +20,7 @@ import {
 } from "./crypto.js";
 import type { KeyPair } from "./crypto.js";
 import { readEnvFile } from "./utils.js";
+import { isBun, getEnv, getRuntimeName, getRuntimeVersion } from "./runtime.js";
 
 export {
   defineSchema,
@@ -39,6 +40,10 @@ export {
   decryptEnvValue,
   isEncryptedValue,
   loadPrivateKey,
+  isBun,
+  getEnv,
+  getRuntimeName,
+  getRuntimeVersion,
 };
 export type { SchemaDefinition, SchemaRule, ExtractEnv, InferEnv, KeyPair };
 

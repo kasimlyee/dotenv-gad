@@ -7,12 +7,12 @@ import TabItem from '@theme/TabItem';
 
 # Installation
 
-This guide explains how to install **dotenv-gad** in your Node.js or TypeScript project.
+This guide explains how to install **dotenv-gad** in your Node.js, Bun, or TypeScript project.
 
 ## Requirements
 
-* **Node.js** ≥ 18
-* **npm**, **yarn**, or **pnpm**
+* **Node.js** ≥ 18 or **Bun** ≥ 1.0
+* **npm**, **yarn**, **pnpm**, or **bun**
 
 Install `dotenv-gad` using your preferred package manager:
 
@@ -43,6 +43,15 @@ Install `dotenv-gad` using your preferred package manager:
 
 
 </TabItem>
+
+<TabItem value="bun" label="bun">
+
+    ```bash
+    bun add dotenv-gad
+    ```
+
+
+</TabItem>
 </Tabs>
 
 ## Verify Installation
@@ -51,6 +60,8 @@ After installation, verify that the package is available:
 
 ```bash
 npx dotenv-gad --help
+# or with Bun
+bunx dotenv-gad --help
 ```
 
 You should see the list of available CLI commands.

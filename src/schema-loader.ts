@@ -4,9 +4,11 @@
  * Deliberately free of CLI-only dependencies (chalk, inquirer) so it can be
  * imported by the Vite plugin without pulling in heavy Node packages.
  *
- * esbuild is required only when loading `.ts` schemas and is imported
+ * esbuild is required only when loading `.ts` schemas in Node.js and is imported
  * lazily via `await import("esbuild")` so the module itself has no
  * top-level dependency on it.
+ *
+ * In Bun, TypeScript files are loaded directly without transpilation.
  */
 
 import { readFileSync, writeFileSync, unlinkSync, existsSync } from "fs";
@@ -14,6 +16,7 @@ import { dirname, join, resolve } from "path";
 import { fileURLToPath, pathToFileURL } from "url";
 import { randomBytes } from "crypto";
 import type { SchemaDefinition } from "./schema.js";
+import { isBun } from "./runtime.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -32,6 +35,12 @@ async function importModule(filePath: string): Promise<SchemaDefinition> {
 }
 
 async function loadTsModule(tsFilePath: string): Promise<SchemaDefinition> {
+  // Bun can import TypeScript files directly without transpilation
+  if (isBun()) {
+    return await importModule(tsFilePath);
+  }
+
+  // Node.js requires transpilation via esbuild
   const tempFile = join(
     __dirname,
     `../temp-schema-${randomBytes(8).toString("hex")}.mjs`
@@ -57,7 +66,8 @@ async function loadTsModule(tsFilePath: string): Promise<SchemaDefinition> {
  * Loads a schema from a file.
  *
  * Supports `.ts`, `.js`, `.mjs`, `.cjs`, and `.json` formats.
- * TypeScript files are transpiled on-the-fly via esbuild (loaded lazily).
+ * TypeScript files are loaded natively in Bun, or transpiled on-the-fly
+ * via esbuild in Node.js (loaded lazily).
  */
 export async function loadSchema(
   schemaPath: string
