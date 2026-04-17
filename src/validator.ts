@@ -1,6 +1,7 @@
 import { SchemaDefinition, SchemaRule } from "./schema.js";
 import { EnvAggregateError, EncryptionKeyMissingError } from "./errors.js";
 import { decryptEnvValue, isEncryptedValue, loadPrivateKey } from "./crypto.js";
+import { getEnv } from "./runtime.js";
 import net from "net";
 
 const kValidator = Symbol.for("dotenv-gad.EnvValidator");
@@ -417,7 +418,8 @@ export class EnvValidator {
   }
 
   private getEffectiveRule(_key: string, rule: SchemaRule) {
-    const envName = process.env.NODE_ENV || "development";
+    const runtimeEnv = getEnv();
+    const envName = runtimeEnv.NODE_ENV || "development";
     const envRule = rule.env?.[envName] || {};
     return { ...rule, ...envRule };
   }

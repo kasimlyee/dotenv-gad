@@ -3,17 +3,31 @@ import { parse as parseEnv } from "dotenv";
 import { readFileSync, existsSync } from "node:fs";
 import { EnvValidator } from "./validator.js";
 import type { InferEnv } from "./types.js";
+import { isBun, getEnv } from "./runtime.js";
 
 /**
  * Silently reads and parses a .env file without injecting into process.env.
  * Returns an empty object when the file does not exist (e.g. Vercel, Railway,
  * Docker — where env vars are already present in process.env).
+ *
+ * In Bun, this uses Bun's optimized file reading when available.
  */
 export function readEnvFile(path?: string): Record<string, string> {
   const filePath = path ?? ".env";
   if (!existsSync(filePath)) return {};
   try {
-    return parseEnv(readFileSync(filePath, "utf-8"));
+    // Use Bun's file reading when available for better performance
+    let content: string;
+    if (isBun() && typeof (globalThis as any).Bun?.file === 'function') {
+      // Bun's synchronous text reading
+      const file = (globalThis as any).Bun.file(filePath);
+      content = file.text ? (typeof file.text === 'function' ? file.text() : file.text) : readFileSync(filePath, "utf-8");
+      // Note: Bun.file().text() is async, so fallback to readFileSync for sync operation
+      content = readFileSync(filePath, "utf-8");
+    } else {
+      content = readFileSync(filePath, "utf-8");
+    }
+    return parseEnv(content);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.warn(`[dotenv-gad] Failed to parse ${filePath}: ${message}`);
@@ -48,7 +62,9 @@ export function loadEnv<S extends SchemaDefinition>(
   }
 ): InferEnv<S> {
   const fileEnv = readEnvFile(options?.path);
-  const env = { ...process.env, ...fileEnv };
+  // Use runtime-aware environment getter (process.env or Bun.env)
+  const runtimeEnv = getEnv();
+  const env = { ...runtimeEnv, ...fileEnv };
 
   const validator = new EnvValidator(schema, options);
   return validator.validate(env) as InferEnv<S>;

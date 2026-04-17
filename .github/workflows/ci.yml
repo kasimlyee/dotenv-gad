@@ -38,3 +38,33 @@ jobs:
 
       - name: Run tests
         run: npm test
+
+  test-bun:
+    name: Test on ${{ matrix.os }} (Bun)
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Type-check
+        run: bun tsc -p tsconfig.build.json --noEmit
+
+      - name: Build
+        run: bun run build
+
+      - name: Run tests
+        run: bun test

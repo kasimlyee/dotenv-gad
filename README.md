@@ -4,11 +4,12 @@
 [![CI](https://github.com/kasimlyee/dotenv-gad/actions/workflows/ci.yml/badge.svg)](https://github.com/kasimlyee/dotenv-gad/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](https://nodejs.org)
+[![Bun](https://img.shields.io/badge/bun-%3E%3D1.0-blue)](https://bun.sh)
 [![TypeScript](https://img.shields.io/badge/TypeScript-first--class-blue?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Docs](https://img.shields.io/badge/docs-latest-blue?style=flat-square)](https://kasimlyee.github.io/dotenv-gad/)
 [![npm downloads](https://img.shields.io/npm/dm/dotenv-gad.svg)](https://www.npmjs.com/package/dotenv-gad)
 
-**dotenv-gad** is an environment variable validation library that brings type safety, schema validation, and runtime checks to your Node.js and JavaScript applications. It works with any environment variable source — `.env` files, platform dashboards (Vercel, Railway, Docker), CI/CD pipelines, or `process.env` directly.
+**dotenv-gad** is an environment variable validation library that brings type safety, schema validation, and runtime checks to your Node.js, Bun, and JavaScript applications. It works with any environment variable source — `.env` files, platform dashboards (Vercel, Railway, Docker), CI/CD pipelines, or `process.env` directly.
 
 - Type-safe environment variables with full IntelliSense
 - Schema validation (string, number, boolean, url, email, ip, port, json, array, object)
@@ -28,6 +29,8 @@ npm install dotenv-gad
 yarn add dotenv-gad
 # or
 pnpm add dotenv-gad
+# or
+bun add dotenv-gad
 ```
 
 ## Quick Start
@@ -238,6 +241,36 @@ Given `DATABASE_DB_NAME=mydb`, `DATABASE_PORT=5432`, `DATABASE_PWD=supersecret`:
 ```typescript
 const env = loadEnv(schema);
 // { DATABASE: { DB_NAME: 'mydb', PORT: 5432, PWD: 'supersecret' } }
+```
+
+## Bun Support
+
+**dotenv-gad** has support for Bun! All features work seamlessly with Bun's runtime.
+
+### Using the CLI with Bun
+
+```bash
+bunx dotenv-gad check
+bunx dotenv-gad keygen
+bunx dotenv-gad encrypt
+```
+
+### Bun Runtime Example
+
+```typescript
+import { loadEnv } from "dotenv-gad";
+import schema from "./env.schema";
+
+const env = loadEnv(schema);
+console.log(`Server running on port ${env.PORT}`);
+
+// Start a Bun HTTP server
+Bun.serve({
+  port: env.PORT,
+  fetch() {
+    return new Response("Hello from Bun with dotenv-gad!");
+  },
+});
 ```
 
 ## Framework Integrations

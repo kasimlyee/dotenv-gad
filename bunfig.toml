@@ -1,0 +1,11 @@
+# Bun configuration for dotenv-gad
+
+[install]
+# Use exact versions for reproducible installs
+exact = true
+
+# Peer dependencies
+peer = true
+
+# Auto-install peer dependencies
+auto = true

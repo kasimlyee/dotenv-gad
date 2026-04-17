@@ -1,6 +1,4 @@
 import {
-  createCipheriv,
-  createDecipheriv,
   createPrivateKey,
   createPublicKey,
   diffieHellman,
@@ -8,9 +6,10 @@ import {
   hkdfSync,
   randomBytes,
 } from "node:crypto";
-import type { CipherGCM, DecipherGCM } from "node:crypto";
+import { chacha20poly1305 } from "@noble/ciphers/chacha.js";
 import { existsSync, readFileSync } from "node:fs";
 import { DecryptionFailedError } from "./errors.js";
+import { getEnv } from "./runtime.js";
 
 const SPKI_PREFIX = Buffer.from("302a300506032b656e032100", "hex");
 
@@ -94,20 +93,14 @@ export function encryptEnvValue(
 
   const nonce = randomBytes(NONCE_LENGTH);
 
-  const cipher = createCipheriv(
-    "chacha20-poly1305",
-    encKey,
-    nonce,
-    { authTagLength: AUTH_TAG_LENGTH } as Parameters<typeof createCipheriv>[3]
-  ) as unknown as CipherGCM;
-
-  cipher.setAAD(Buffer.from(`${AAD_PREFIX}${varName}`));
-  const ciphertext = Buffer.concat([cipher.update(plaintext, "utf8"), cipher.final()]);
-  const authTag = cipher.getAuthTag();
+  const aad = Buffer.from(`${AAD_PREFIX}${varName}`);
+  const cipher = chacha20poly1305(encKey, nonce, aad);
+  // encrypt() returns ciphertext || 16-byte auth tag concatenated
+  const encrypted = cipher.encrypt(Buffer.from(plaintext, "utf8"));
 
   const rawEphPubKey = ephSpki.subarray(SPKI_PREFIX.length);
 
-  const payload = Buffer.concat([rawEphPubKey, nonce, ciphertext, authTag]);
+  const payload = Buffer.concat([rawEphPubKey, nonce, encrypted]);
   return `${PROTOCOL_PREFIX}${ENCRYPTION_VERSION}:${payload.toString("base64")}`;
 }
 
@@ -154,9 +147,8 @@ export function decryptEnvValue(
 
   const rawEphPubKey = payload.subarray(0, RAW_KEY_LENGTH);
   const nonce = payload.subarray(RAW_KEY_LENGTH, RAW_KEY_LENGTH + NONCE_LENGTH);
-  const rest = payload.subarray(RAW_KEY_LENGTH + NONCE_LENGTH);
-  const authTag = rest.subarray(rest.length - AUTH_TAG_LENGTH);
-  const ciphertext = rest.subarray(0, rest.length - AUTH_TAG_LENGTH);
+  // rest = ciphertext || 16-byte auth tag (as produced by @noble/ciphers encrypt)
+  const encrypted = payload.subarray(RAW_KEY_LENGTH + NONCE_LENGTH);
 
   const ephSpki = Buffer.concat([SPKI_PREFIX, rawEphPubKey]);
 
@@ -172,19 +164,12 @@ export function decryptEnvValue(
     hkdfSync("sha256", sharedSecret, HKDF_SALT, HKDF_INFO, 32)
   );
 
-  const decipher = createDecipheriv(
-    "chacha20-poly1305",
-    encKey,
-    nonce,
-    { authTagLength: AUTH_TAG_LENGTH } as Parameters<typeof createDecipheriv>[3]
-  ) as unknown as DecipherGCM;
-
-  decipher.setAAD(Buffer.from(`${AAD_PREFIX}${varName}`));
-  decipher.setAuthTag(authTag);
+  const aad = Buffer.from(`${AAD_PREFIX}${varName}`);
+  const decipher = chacha20poly1305(encKey, nonce, aad);
 
   try {
-    const plaintext = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
-    return plaintext.toString("utf8");
+    const plaintext = decipher.decrypt(encrypted);
+    return Buffer.from(plaintext).toString("utf8");
   } catch {
     throw new DecryptionFailedError(varName);
   }
@@ -231,9 +216,11 @@ export function loadPrivateKey(options: { keysPath?: string } = {}): string | nu
     }
   }
 
-  const envKey = process.env.ENVGAD_PRIVATE_KEY;
+  const runtimeEnv = getEnv();
+  const envKey = runtimeEnv.ENVGAD_PRIVATE_KEY;
   if (envKey) {
-    delete process.env.ENVGAD_PRIVATE_KEY;
+    // Remove the key from environment after reading for security
+    delete runtimeEnv.ENVGAD_PRIVATE_KEY;
     if (!/^[a-fA-F0-9]+$/.test(envKey) || envKey.length !== PRIVATE_KEY_HEX_LENGTH) {
       throw new Error(
         `Invalid ENVGAD_PRIVATE_KEY format (expected ${PRIVATE_KEY_HEX_LENGTH}-char hex-encoded PKCS8 DER, got ${envKey.length} chars)`

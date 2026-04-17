@@ -19,6 +19,8 @@ This project is open to improvements and community collaboration. Whether you’
 
    ```bash
    npm install
+   # or with Bun
+   bun install
    ```
 
 3. **Start development**:
@@ -52,10 +54,12 @@ This project is open to improvements and community collaboration. Whether you’
 
 ## Running Tests
 
-Make sure your changes don’t break existing features:
+Make sure your changes don't break existing features:
 
 ```bash
 npm run test
+# or with Bun
+bun test
 ```
 
 ---
