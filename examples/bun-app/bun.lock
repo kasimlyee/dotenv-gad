@@ -1,0 +1,15 @@
+{
+  "lockfileVersion": 1,
+  "configVersion": 1,
+  "workspaces": {
+    "": {
+      "name": "bun-app-example",
+      "dependencies": {
+        "dotenv-gad": "link:dotenv-gad",
+      },
+    },
+  },
+  "packages": {
+    "dotenv-gad": ["dotenv-gad@link:dotenv-gad", { "bin": { "dotenv-gad": "./dist/cli/index.js" } }],
+  }
+}
