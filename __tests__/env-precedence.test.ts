@@ -4,12 +4,14 @@
  * environment wins, unless `override: true` is passed explicitly.
  */
 import { describe, test, expect, beforeAll, afterAll, afterEach } from "vitest";
-import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, rmSync, writeFileSync, mkdtempSync } from "node:fs";
 import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { defineSchema, loadEnv, validateEnv } from "../src/index.js";
 import { mergeEnv } from "../src/utils.js";
 
-const TMP = join(__dirname, ".fixtures-precedence");
+// Create a unique temporary fixtures directory for this test file
+const TMP = mkdtempSync(join(tmpdir(), "dotenv-gad-fixtures-"));
 const ENV_PATH = join(TMP, ".env");
 
 beforeAll(() => {
@@ -17,7 +19,7 @@ beforeAll(() => {
   writeFileSync(ENV_PATH, "PRECEDENCE_LOG_LEVEL=debug\nPRECEDENCE_FILE_ONLY=from-file\n");
 });
 afterAll(() => {
-  if (existsSync(TMP)) rmSync(TMP, { recursive: true });
+  if (existsSync(TMP)) rmSync(TMP, { recursive: true, force: true });
 });
 afterEach(() => {
   delete process.env.PRECEDENCE_LOG_LEVEL;
