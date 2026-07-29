@@ -25,7 +25,7 @@ import {
   loadPrivateKey,
 } from "./crypto.js";
 import type { KeyPair } from "./crypto.js";
-import { readEnvFile } from "./utils.js";
+import { readEnvFile, mergeEnv } from "./utils.js";
 import { isBun, getEnv, getRuntimeName, getRuntimeVersion } from "./runtime.js";
 
 export {
@@ -68,10 +68,11 @@ export function validateEnv(
     path?: string;
     allowPlaintext?: boolean;
     keysPath?: string;
+    override?: boolean;
   }
 ) {
   const fileEnv = readEnvFile(options?.path);
-  const env = { ...process.env, ...fileEnv };
+  const env = mergeEnv(fileEnv, process.env, options?.override);
   const validator = new EnvValidator(schema, options);
   return validator.validate(env);
 }

@@ -37,6 +37,25 @@ export function readEnvFile(path?: string): Record<string, string> {
 
 
 /**
+ * Merges `.env` file values with the runtime environment. Following dotenv
+ * conventions, variables already set in the real environment win over file
+ * values — the file provides defaults. Pass `override: true` to invert this
+ * and let file values replace runtime variables.
+ */
+export function mergeEnv(
+  fileEnv: Record<string, string>,
+  runtimeEnv: Record<string, string | undefined>,
+  override?: boolean
+): Record<string, string | undefined> {
+  if (override) return { ...runtimeEnv, ...fileEnv };
+  const env: Record<string, string | undefined> = { ...fileEnv };
+  for (const [key, value] of Object.entries(runtimeEnv)) {
+    if (value !== undefined) env[key] = value;
+  }
+  return env;
+}
+
+/**
  * Loads environment variables from a `.env` file (if present) and validates them
  * against the provided schema.
  *
@@ -48,6 +67,7 @@ export function readEnvFile(path?: string): Record<string, string> {
  * @param options.path Path to the `.env` file (defaults to `.env` in cwd).
  * @param options.allowPlaintext When true, fields with `encrypted: true` that have plaintext values emit a warning instead of an error.
  * @param options.keysPath Path to the `.env.keys` file containing ENVGAD_PRIVATE_KEY (default: `.env.keys`).
+ * @param options.override When true, `.env` file values replace variables already set in the real environment (dotenv's `override` semantics). Default: real environment wins.
  * @returns The validated environment variables, typed according to the schema.
  */
 export function loadEnv<S extends SchemaDefinition>(
@@ -59,12 +79,13 @@ export function loadEnv<S extends SchemaDefinition>(
     path?: string;
     allowPlaintext?: boolean;
     keysPath?: string;
+    override?: boolean;
   }
 ): InferEnv<S> {
   const fileEnv = readEnvFile(options?.path);
   // Use runtime-aware environment getter (process.env or Bun.env)
   const runtimeEnv = getEnv();
-  const env = { ...runtimeEnv, ...fileEnv };
+  const env = mergeEnv(fileEnv, runtimeEnv, options?.override);
 
   const validator = new EnvValidator(schema, options);
   return validator.validate(env) as InferEnv<S>;

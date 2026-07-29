@@ -29,7 +29,7 @@ const env = loadEnv(schema);
 console.log(env.PORT); // number — fully typed
 ```
 
-`loadEnv` reads from both `process.env` and your `.env` file (if present). `.env` file values take priority over existing `process.env` values, but platform-injected variables (Vercel, Railway, Docker, AWS Lambda) work out of the box — no `.env` file required.
+`loadEnv` reads from both `process.env` and your `.env` file (if present). Following dotenv conventions, variables already set in the real environment take priority over `.env` file values — the file provides development defaults, and platform-injected variables (Vercel, Railway, Docker, AWS Lambda) work out of the box with no `.env` file required. Pass `override: true` if you want file values to win instead.
 
 ## Options
 
@@ -37,6 +37,7 @@ console.log(env.PORT); // number — fully typed
 - `includeRaw` — include raw values in error reports (non-sensitive by default).
 - `includeSensitive` — when used with `includeRaw` will reveal values marked sensitive (use only for local debugging).
 - `path` — path to a custom `.env` file (defaults to `.env` in cwd).
+- `override` — when true, `.env` file values replace variables already set in the real environment (default: the real environment wins).
 
 ## Using EnvValidator directly
 
